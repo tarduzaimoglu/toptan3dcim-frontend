@@ -268,7 +268,9 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 }
 
 export async function getCatalogProducts(): Promise<any[]> {
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&fields[0]=title&fields[1]=featured&fields[2]=wholesalePrice&fields[3]=minQty";
+  // YENİ: URL'ye varyantları ve varyant resimlerini getirmesi için gerekli parametreleri ekledik
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[variants][populate]=VariantImage&fields[0]=title&fields[1]=featured&fields[2]=wholesalePrice&fields[3]=minQty";
+  
   const res = await strapiFetch<any>(path);
   const items = unwrapCollection(res);
 
@@ -278,6 +280,16 @@ export async function getCatalogProducts(): Promise<any[]> {
     const imageUrls = (Array.isArray(imgField) ? imgField : [imgField])
       .map((m: any) => getMediaUrl(m))
       .filter((u): u is string => typeof u === "string");
+
+    // YENİ: Gelen raw varyant datasını Next.js'in anlayacağı şekle çeviriyoruz
+    const mappedVariants = Array.isArray(x?.variants) 
+      ? x.variants.map((v: any) => ({
+          ColorName: v.ColorName || "",
+          ColorCode: v.ColorCode || "",
+          // VariantImage'ın URL'sini getMediaUrl fonksiyonunla güvenli şekilde alıyoruz
+          VariantImage: { url: getMediaUrl(v.VariantImage) || "" } 
+        })).filter((v: any) => v.ColorName !== "") // Boş varyantları süzüyoruz
+      : [];
 
     return {
       id: String(x?.id ?? x?.documentId ?? ""),
@@ -290,6 +302,7 @@ export async function getCatalogProducts(): Promise<any[]> {
       minQty: x?.minQty,
       bullets: normalizeStringArray(x?.bullets),
       specs: normalizeStringArray(x?.specs),
+      variants: mappedVariants // YENİ: Varyantları döndürüyoruz
     };
   });
 }
