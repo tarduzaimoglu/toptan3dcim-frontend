@@ -246,29 +246,58 @@ export async function getCategories(): Promise<StrapiCategory[]> {
 
 function normalizeStringArray(input: any): string[] {
   if (!input) return [];
-  if (Array.isArray(input)) return input.map(String).filter(Boolean);
-  
-  if (typeof input === "string") {
-    // 1. JSON formatındaysa çözmeyi dene
-    try {
-      const parsed = JSON.parse(input);
-      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
-    } catch { }
 
-    // 2. Senin yaptığın gibi HTML <li> etiketleri kullanılmışsa içindeki metni çek
-    if (input.includes('<li>')) {
-      const matches = input.match(/<li>(.*?)<\/li>/gi);
+  let data = input;
+  
+  // Eğer veri stringify edilmiş bir JSON ise objeye çevir
+  if (typeof data === "string") {
+    try { data = JSON.parse(data); } catch { }
+  }
+
+  // Strapi'nin karmaşık Rich Text (Blocks) yapısını çözen kısım
+  if (Array.isArray(data) && data.some(item => item && typeof item === "object")) {
+    let extractedText = "";
+    
+    // Objenin derinliklerine inip sadece "text" alanlarını toplayan fonksiyon
+    const extractRecursively = (node: any) => {
+      if (!node) return;
+      if (typeof node === "string") { extractedText += node + "\n"; return; }
+      if (node.type === "text" && node.text) { extractedText += node.text + "\n"; return; }
+      if (Array.isArray(node.children)) { node.children.forEach(extractRecursively); }
+    };
+
+    data.forEach(extractRecursively);
+    
+    // Çıkarılan metni string olarak işleme devam ettir
+    data = extractedText;
+  }
+
+  // Elimizde kalan veri bir string ise (HTML veya düz metin)
+  if (typeof data === "string") {
+    if (data.includes("<li>")) {
+      const matches = data.match(/<li>(.*?)<\/li>/gi);
       if (matches) {
-        return matches.map(m => m.replace(/<\/?li>/gi, '').trim()).filter(Boolean);
+        // TypeScript hatasını önlemek için (m: string) eklendi
+        return matches
+          .map((m: string) => m.replace(/<\/?li>/gi, "").replace(/<\/?[^>]+(>|$)/g, "").trim())
+          .filter(Boolean);
       }
     }
-    
-    // 3. Alt alta düz metin yazılmışsa (kalan HTML'leri temizleyerek) al
-    return input
+    // TypeScript hatasını önlemek için (s: string) eklendi
+    return data
       .split('\n')
-      .map(s => s.replace(/<\/?[^>]+(>|$)/g, '').trim())
+      .map((s: string) => s.replace(/<\/?[^>]+(>|$)/g, '').trim())
       .filter(Boolean);
   }
+
+  // Basit bir array ise (eski obje hatasını engellemek için sadece stringleri al)
+  if (Array.isArray(data)) {
+    return data
+      .filter(item => item && typeof item !== "object") 
+      .map((item: any) => String(item).replace(/<\/?[^>]+(>|$)/g, "").trim())
+      .filter(Boolean);
+  }
+
   return [];
 }
 
