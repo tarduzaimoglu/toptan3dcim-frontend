@@ -95,8 +95,14 @@ export function ProductExpandPanel({
 
   const onAdd = () => {
     if (!qtyValid || parsedQty === null) return;
+    
+    // YENİ: Renk seçiliyse ID'nin sonuna rengi ekleyerek benzersiz bir ID oluşturuyoruz.
+    const uniqueCartId = selectedVariant 
+      ? `${product.id}-${selectedVariant.ColorName}` 
+      : product.id;
+
     addItem({
-      id: product.id,
+      id: uniqueCartId, // Artık salt product.id değil, renkli ID gidiyor
       title: `${product.title} ${selectedVariant ? `(${selectedVariant.ColorName})` : ""}`,
       price: unitPrice,
       image: activeImg,
@@ -104,7 +110,6 @@ export function ProductExpandPanel({
       minQty: rules.min,
     });
   };
-
   // --- ZOOM LOGIC (Masaüstü için) ---
   const mainWrapRef = useRef<HTMLDivElement | null>(null);
   const [zoomOn, setZoomOn] = useState(false);

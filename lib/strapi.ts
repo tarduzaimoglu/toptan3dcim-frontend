@@ -269,7 +269,7 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 
 export async function getCatalogProducts(): Promise<any[]> {
   // YENİ: URL'ye varyantları ve varyant resimlerini getirmesi için gerekli parametreleri ekledik
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[variants][populate]=VariantImage&fields[0]=title&fields[1]=featured&fields[2]=wholesalePrice&fields[3]=minQty";
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage&fields[0]=title&fields[1]=featured&fields[2]=wholesalePrice&fields[3]=minQty";
   
   const res = await strapiFetch<any>(path);
   const items = unwrapCollection(res);
