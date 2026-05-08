@@ -312,13 +312,6 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 }
 
 export async function getCatalogProducts(): Promise<any[]> {
-  // YENİ: URL'ye açıklama metnini de getirmesi için "&populate[3]=description" eklendi
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage&populate[3]=description";
-  
-  const res = await strapiFetch<any>(path);
-  const items = unwrapCollection(res);
-
-  export async function getCatalogProducts(): Promise<any[]> {
   // populate[3]=description kısmını SİLDİK. Çünkü metin alanları zaten otomatik gelir.
   const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
   
