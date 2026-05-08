@@ -30,15 +30,39 @@ function ShoppingCartIcon({ className = "" }: { className?: string }) {
 }
 
 function AnimatedBurger({ open }: { open: boolean }) {
+  // Akıcı ve modern "Spring" efekti için özel zamanlama (EASE)
+  const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
+  const commonLineClass = `absolute left-0 h-[2.5px] w-6 rounded-full bg-slate-700 transform-gpu transition-all duration-300 ${EASE}`;
+
   return (
-    <span className="relative block h-6 w-6 transition-transform duration-300" aria-hidden="true">
-      <span className={["absolute left-0 top-[6px] h-[2.5px] w-6 rounded-full bg-slate-700 transform-gpu transition-all duration-300", EASE, open ? "translate-y-[6px] rotate-45" : "translate-y-0 rotate-0"].join(" ")} />
-      <span className={["absolute left-0 top-[12px] h-[2.5px] w-6 rounded-full bg-slate-700 transform-gpu transition-all duration-200", EASE, open ? "opacity-0 scale-x-50" : "opacity-100 scale-x-100"].join(" ")} />
-      <span className={["absolute left-0 top-[18px] h-[2.5px] w-6 rounded-full bg-slate-700 transform-gpu transition-all duration-300", EASE, open ? "-translate-y-[6px] -rotate-45" : "translate-y-0 rotate-0"].join(" ")} />
+    <span className="relative block h-6 w-6" aria-hidden="true">
+      {/* Üst Çizgi */}
+      <span
+        className={[
+          commonLineClass,
+          "top-[6px]",
+          open ? "translate-y-[6px] rotate-45" : "translate-y-0 rotate-0",
+        ].join(" ")}
+      />
+      {/* Orta Çizgi */}
+      <span
+        className={[
+          commonLineClass,
+          "top-[12px]",
+          open ? "opacity-0 scale-x-50" : "opacity-100 scale-x-100",
+        ].join(" ")}
+      />
+      {/* Alt Çizgi */}
+      <span
+        className={[
+          commonLineClass,
+          "top-[18px]",
+          open ? "-translate-y-[6px] -rotate-45" : "translate-y-0 rotate-0",
+        ].join(" ")}
+      />
     </span>
   );
 }
-
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);

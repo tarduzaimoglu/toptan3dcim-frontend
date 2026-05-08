@@ -312,7 +312,6 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 }
 
 export async function getCatalogProducts(): Promise<any[]> {
-  // populate[3]=description kısmını SİLDİK. Çünkü metin alanları zaten otomatik gelir.
   const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
   
   const res = await strapiFetch<any>(path);
@@ -325,11 +324,14 @@ export async function getCatalogProducts(): Promise<any[]> {
       .map((m: any) => getMediaUrl(m))
       .filter((u): u is string => typeof u === "string");
 
+    // YENİ: VariantImage artık dizi olabildiği için ilk resmi (index 0) alıyoruz
     const mappedVariants = Array.isArray(x?.variants) 
       ? x.variants.map((v: any) => ({
           ColorName: v.ColorName || "",
           ColorCode: v.ColorCode || "",
-          VariantImage: { url: getMediaUrl(v.VariantImage) || "" } 
+          VariantImage: { 
+            url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" 
+          } 
         })).filter((v: any) => v.ColorName !== "")
       : [];
 
@@ -346,7 +348,7 @@ export async function getCatalogProducts(): Promise<any[]> {
       bullets: normalizeStringArray(x?.bullets),
       specs: normalizeStringArray(x?.specs),
       variants: mappedVariants,
-      description: x?.description || "" // Veri otomatik geldiği için burası hala sorunsuz çalışacak!
+      description: x?.description || ""
     };
   });
 }
