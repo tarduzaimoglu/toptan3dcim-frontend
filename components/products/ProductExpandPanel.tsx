@@ -273,13 +273,23 @@ export function ProductExpandPanel({
               </a>
             </div>
 
-            {/* Teknik Detaylar */}
-            {Array.isArray(p.specs) && p.specs.length > 0 && (
+            {/* Teknik Detaylar & Öne Çıkanlar */}
+            {( (Array.isArray(p.specs) && p.specs.length > 0) || (Array.isArray(p.bullets) && p.bullets.length > 0) ) && (
               <div className="mt-8 rounded-2xl bg-slate-50 p-5">
                 <h4 className="text-sm font-bold text-slate-900 mb-3">Ürün Detayları</h4>
                 <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {p.specs.map((s: string, i: number) => (
-                    <li key={i} className="flex items-center text-sm text-slate-600">
+                  
+                  {/* Önce Bullets (Öne Çıkanlar) - Yeşil Noktalı */}
+                  {Array.isArray(p.bullets) && p.bullets.map((s: string, i: number) => (
+                    <li key={`bullet-${i}`} className="flex items-center text-sm text-slate-700 font-medium">
+                      <span className="mr-2 h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      {s}
+                    </li>
+                  ))}
+
+                  {/* Sonra Specs (Teknik Özellikler) - Mavi Noktalı */}
+                  {Array.isArray(p.specs) && p.specs.map((s: string, i: number) => (
+                    <li key={`spec-${i}`} className="flex items-center text-sm text-slate-600">
                       <span className="mr-2 h-1.5 w-1.5 rounded-full bg-blue-400" />
                       {s}
                     </li>

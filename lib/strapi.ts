@@ -246,14 +246,29 @@ export async function getCategories(): Promise<StrapiCategory[]> {
 
 function normalizeStringArray(input: any): string[] {
   if (!input) return [];
+  if (Array.isArray(input)) return input.map(String).filter(Boolean);
+  
   if (typeof input === "string") {
+    // 1. JSON formatındaysa çözmeyi dene
     try {
       const parsed = JSON.parse(input);
       if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
-      return [];
-    } catch { return []; }
+    } catch { }
+
+    // 2. Senin yaptığın gibi HTML <li> etiketleri kullanılmışsa içindeki metni çek
+    if (input.includes('<li>')) {
+      const matches = input.match(/<li>(.*?)<\/li>/gi);
+      if (matches) {
+        return matches.map(m => m.replace(/<\/?li>/gi, '').trim()).filter(Boolean);
+      }
+    }
+    
+    // 3. Alt alta düz metin yazılmışsa (kalan HTML'leri temizleyerek) al
+    return input
+      .split('\n')
+      .map(s => s.replace(/<\/?[^>]+(>|$)/g, '').trim())
+      .filter(Boolean);
   }
-  if (Array.isArray(input)) return input.map(String).filter(Boolean);
   return [];
 }
 
@@ -269,7 +284,7 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 
 export async function getCatalogProducts(): Promise<any[]> {
   // YENİ: URL'ye varyantları ve varyant resimlerini getirmesi için gerekli parametreleri ekledik
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage&fields[0]=title&fields[1]=featured&fields[2]=wholesalePrice&fields[3]=minQty";
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
   
   const res = await strapiFetch<any>(path);
   const items = unwrapCollection(res);
