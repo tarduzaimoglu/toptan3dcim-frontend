@@ -58,13 +58,16 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
       {/* YENİ: aspect-[3/4] yaparak 3000x4000px görsellerinin 
         tam olarak buraya oturmasını sağladık. Kenarlarda boşluk kalmayacak.
       */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-50">
+      {/* Görsel Alanı */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-white border-b border-slate-100">
         <Image
           src={imgSrc}
           alt={product.title}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-          className="object-contain p-2 mix-blend-multiply"
+          // p-2 silindi, görsel artık köşelere tam oturacak. 
+          // object-contain korundu ki yatay resimler kırpılmasın.
+          className="object-contain" 
         />
 
         {tag ? (
