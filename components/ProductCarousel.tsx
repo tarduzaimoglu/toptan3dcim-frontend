@@ -17,11 +17,7 @@ function resolveThumbSrc(product: any) {
   const raw = (typeof target?.imageUrl === "string" && target.imageUrl.trim() && target.imageUrl) ||
               (typeof target?.image === "string" && target.image.trim() && target.image);
 
-  if (!raw) return "/products/placeholder.png";
-  if (!raw.includes("/storage/v1/object/public/media/")) return raw;
-  if (/\.(webp|avif)$/i.test(raw)) return raw;
-
-  return raw.replace("/media/", "/media/thumbs/").replace(/\.(jpg|jpeg|png)$/i, ".webp");
+  return raw || "/products/placeholder.png";
 }
 
 export default function ProductCarousel({ products }: { products: any[] }) {
@@ -34,9 +30,6 @@ export default function ProductCarousel({ products }: { products: any[] }) {
         grabCursor={true}
         centeredSlides={true}
         loop={true} 
-        // ✅ FIX: loopedSlides={5} hataya sebep oluyordu. 
-        // Modern Swiper'da bunun yerine loopAdditionalSlides kullanılır 
-        // veya loop={true} zaten yeterli simetriyi sağlar.
         speed={1000}
         autoplay={{ delay: 3500, disableOnInteraction: false }}
         coverflowEffect={{
@@ -49,35 +42,31 @@ export default function ProductCarousel({ products }: { products: any[] }) {
         modules={[Autoplay, Pagination, EffectCoverflow]}
         className="w-full !overflow-visible product-slider" 
         breakpoints={{
-          0: { 
-            slidesPerView: 3, 
-          }, 
-          1024: { 
-            slidesPerView: 5, 
-          },
+          0: { slidesPerView: 2 }, // Mobilde daha iyi görünmesi için 2'ye düşürebiliriz
+          768: { slidesPerView: 3 },
+          1024: { slidesPerView: 5 },
         }}
       >
         {products.map((item) => {
           const attr = item.attributes || item;
           const imgSrc = resolveThumbSrc(item);
-          // ✅ SEO & Strapi uyumu için büyük/küçük harf kontrolü ekledik
           const price = attr.wholesalePrice || attr.WholesalePrice || attr.price || attr.Price || "0";
 
           return (
             <SwiperSlide key={item.id} className="!overflow-visible py-10">
-              {/* ✅ Link yapısını Slug üzerinden gitmek daha doğru olabilir ama mevcut yapıyı korudum */}
               <Link href={`/products?open=${item.id}`}>
-                <div className="relative group rounded-2xl bg-white border border-slate-100 shadow-xl transition-all duration-300 cursor-pointer">
-                  <div className="relative aspect-square w-full overflow-hidden rounded-t-2xl bg-white">
+                <div className="relative group rounded-2xl bg-white border border-slate-100 shadow-xl transition-all duration-300 cursor-pointer h-full flex flex-col">
+                  {/* YENİ: aspect-[3/4] ile dik formata uyum */}
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-slate-50">
                     <Image
                       src={imgSrc}
                       alt={attr.title || attr.Title || "Ürün"}
                       fill
                       sizes="(max-width: 768px) 50vw, 20vw"
-                      className="object-contain p-2"
+                      className="object-contain p-2 mix-blend-multiply"
                     />
                   </div>
-                  <div className="p-3 text-center">
+                  <div className="p-3 text-center flex-grow flex flex-col justify-center">
                     <h3 className="text-[11px] md:text-sm font-semibold text-slate-800 line-clamp-1">
                       {attr.title || attr.Title}
                     </h3>
@@ -99,7 +88,6 @@ export default function ProductCarousel({ products }: { products: any[] }) {
           padding-top: 50px;
           padding-bottom: 50px;
         }
-
         .product-slider .swiper-slide {
           opacity: 0.15;
           filter: blur(8px);
@@ -107,7 +95,6 @@ export default function ProductCarousel({ products }: { products: any[] }) {
           transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 1;
         }
-
         .product-slider .swiper-slide-next,
         .product-slider .swiper-slide-prev {
           opacity: 0.5 !important;
@@ -115,18 +102,11 @@ export default function ProductCarousel({ products }: { products: any[] }) {
           transform: scale(0.85) !important;
           z-index: 20;
         }
-
         .product-slider .swiper-slide-active {
           opacity: 1 !important;
           filter: blur(0) !important;
-          transform: scale(1.2) !important;
+          transform: scale(1.1) !important;
           z-index: 50;
-        }
-
-        @media (max-width: 768px) {
-          .product-slider .swiper-slide-active {
-            transform: scale(1.1) !important;
-          }
         }
       `}</style>
     </div>

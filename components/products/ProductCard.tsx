@@ -5,31 +5,20 @@ import Image from "next/image";
 import type { Product } from "@/lib/products/types";
 import { CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/CartContext";
 
+// Eski Supabase karmaşasını temizledik. Sadece temiz URL'i alıyoruz.
+// Next.js <Image> bileşeni bunu otomatik olarak WebP yapıp optimize edecek!
 function resolveThumbSrc(product: any) {
   const raw =
     (typeof product?.imageUrl === "string" && product.imageUrl.trim() && product.imageUrl) ||
     (typeof product?.image === "string" && product.image.trim() && product.image);
 
-  if (!raw) return "/products/placeholder.png";
-
-  // ✅ Supabase değilse dokunma
-  if (!raw.includes("/storage/v1/object/public/media/")) return raw;
-
-  // ✅ Eğer zaten webp/avif ise: thumbs'a yönlendirme (thumb üretilmemiş olabilir)
-  if (/\.(webp|avif)$/i.test(raw)) return raw;
-
-  // ✅ jpg/jpeg/png ise: thumbs webp kullan
-  return raw
-    .replace("/media/", "/media/thumbs/")
-    .replace(/\.(jpg|jpeg|png)$/i, ".webp");
+  return raw || "/products/placeholder.png";
 }
 
 type Props = {
   product: Product;
   onOpen: () => void;
   isOpen?: boolean;
-
-  // ✅ ProductListWithExpand'ten geliyor — tasarımı bozmadan destekleyelim
   qtyText?: string;
   setQtyText?: (v: string) => void;
 };
@@ -43,7 +32,6 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
   }, [product]);
 
   const priceText = useMemo(() => {
-    // Strapi’den hazır text varsa onu kullan, yoksa sayıya dön
     return product.wholesalePriceText ?? `${unitPrice} TL/adet`;
   }, [product.wholesalePriceText, unitPrice]);
 
@@ -51,7 +39,6 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
     return product.minQtyText ?? `${CART_MIN_QTY}`;
   }, [product.minQtyText]);
 
-  // küçük üst etiket (varsa)
   const tag = useMemo(() => {
     const t = (product as any)?.badge ?? (product as any)?.tag ?? (product as any)?.categoryTitle;
     return typeof t === "string" && t.trim() ? t.trim() : "";
@@ -62,27 +49,26 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
       type="button"
       onClick={onOpen}
       className={[
-        "group w-full text-left",
+        "group w-full text-left flex flex-col",
         "overflow-hidden rounded-2xl border bg-white shadow-sm",
         "transition hover:shadow-md",
-        // Kart açıldığında/seçildiğinde mor kenarlık
         isOpen ? "border-[#7C3AED] ring-2 ring-[#7C3AED]/20" : "border-slate-200",
       ].join(" ")}
     >
-      {/* Görsel */}
-      <div className="relative aspect-[1/1] w-full overflow-hidden bg-slate-100">
+      {/* YENİ: aspect-[3/4] yaparak 3000x4000px görsellerinin 
+        tam olarak buraya oturmasını sağladık. Kenarlarda boşluk kalmayacak.
+      */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-50">
         <Image
           src={imgSrc}
           alt={product.title}
-          width={800}
-          height={800}
+          fill
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-          className="h-full w-full object-contain bg-slate-100"
+          className="object-contain p-2 mix-blend-multiply"
         />
 
-        {/* küçük etiket */}
         {tag ? (
-          <div className="absolute left-3 top-3">
+          <div className="absolute left-3 top-3 z-10">
             <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
               {tag}
             </span>
@@ -90,23 +76,22 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
         ) : null}
       </div>
 
-      {/* Metin alanı */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-grow justify-between">
         <div className="text-[14px] font-semibold leading-snug text-slate-900 line-clamp-2">
           {product.title}
         </div>
 
-        <div className="mt-2 flex items-end justify-between gap-3">
-          <div className="text-[13px] font-semibold text-slate-900">{priceText}</div>
-
-          <div className="text-[11px] text-slate-500">
-            Min. <span className="font-semibold text-slate-700">{minQtyText}</span>
+        <div>
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <div className="text-[13px] font-semibold text-slate-900">{priceText}</div>
+            <div className="text-[11px] text-slate-500">
+              Min. <span className="font-semibold text-slate-700">{minQtyText}</span>
+            </div>
           </div>
-        </div>
 
-        {/* İncele ipucu - Turuncu Renk */}
-        <div className="mt-3 text-[12px] font-medium text-[#ff7a00] opacity-90 transition-all group-hover:opacity-100 group-hover:text-[#e66e00]">
-          Detayları görüntüle →
+          <div className="mt-3 text-[12px] font-medium text-[#ff7a00] opacity-90 transition-all group-hover:opacity-100 group-hover:text-[#e66e00]">
+            Detayları görüntüle →
+          </div>
         </div>
       </div>
     </button>
