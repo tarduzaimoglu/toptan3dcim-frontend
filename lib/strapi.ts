@@ -318,6 +318,13 @@ export async function getCatalogProducts(): Promise<any[]> {
   const res = await strapiFetch<any>(path);
   const items = unwrapCollection(res);
 
+  export async function getCatalogProducts(): Promise<any[]> {
+  // populate[3]=description kısmını SİLDİK. Çünkü metin alanları zaten otomatik gelir.
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
+  
+  const res = await strapiFetch<any>(path);
+  const items = unwrapCollection(res);
+
   return items.map((x: AnyObj) => {
     const cat = unwrapRelation(x?.category_product);
     const imgField = x?.image;
@@ -325,7 +332,6 @@ export async function getCatalogProducts(): Promise<any[]> {
       .map((m: any) => getMediaUrl(m))
       .filter((u): u is string => typeof u === "string");
 
-    // Gelen raw varyant datasını Next.js'in anlayacağı şekle çeviriyoruz
     const mappedVariants = Array.isArray(x?.variants) 
       ? x.variants.map((v: any) => ({
           ColorName: v.ColorName || "",
@@ -347,7 +353,7 @@ export async function getCatalogProducts(): Promise<any[]> {
       bullets: normalizeStringArray(x?.bullets),
       specs: normalizeStringArray(x?.specs),
       variants: mappedVariants,
-      description: x?.description || "" // YENİ: Açıklama alanını Expand Panel'e gönderiyoruz
+      description: x?.description || "" // Veri otomatik geldiği için burası hala sorunsuz çalışacak!
     };
   });
 }
