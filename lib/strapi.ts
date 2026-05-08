@@ -312,8 +312,8 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 }
 
 export async function getCatalogProducts(): Promise<any[]> {
-  // YENİ: URL'ye varyantları ve varyant resimlerini getirmesi için gerekli parametreleri ekledik
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
+  // YENİ: URL'ye açıklama metnini de getirmesi için "&populate[3]=description" eklendi
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage&populate[3]=description";
   
   const res = await strapiFetch<any>(path);
   const items = unwrapCollection(res);
@@ -325,14 +325,13 @@ export async function getCatalogProducts(): Promise<any[]> {
       .map((m: any) => getMediaUrl(m))
       .filter((u): u is string => typeof u === "string");
 
-    // YENİ: Gelen raw varyant datasını Next.js'in anlayacağı şekle çeviriyoruz
+    // Gelen raw varyant datasını Next.js'in anlayacağı şekle çeviriyoruz
     const mappedVariants = Array.isArray(x?.variants) 
       ? x.variants.map((v: any) => ({
           ColorName: v.ColorName || "",
           ColorCode: v.ColorCode || "",
-          // VariantImage'ın URL'sini getMediaUrl fonksiyonunla güvenli şekilde alıyoruz
           VariantImage: { url: getMediaUrl(v.VariantImage) || "" } 
-        })).filter((v: any) => v.ColorName !== "") // Boş varyantları süzüyoruz
+        })).filter((v: any) => v.ColorName !== "")
       : [];
 
     return {
@@ -341,12 +340,14 @@ export async function getCatalogProducts(): Promise<any[]> {
       category: String(cat?.slug ?? ""),
       featured: !!x?.featured,
       imageUrls,
-      image: imageUrls[0] || "",
+      imageUrl: imageUrls[0] || "",
+      image: imageUrls[0] || "", 
       wholesalePrice: x?.wholesalePrice,
       minQty: x?.minQty,
       bullets: normalizeStringArray(x?.bullets),
       specs: normalizeStringArray(x?.specs),
-      variants: mappedVariants // YENİ: Varyantları döndürüyoruz
+      variants: mappedVariants,
+      description: x?.description || "" // YENİ: Açıklama alanını Expand Panel'e gönderiyoruz
     };
   });
 }
