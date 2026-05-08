@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation"; // ✅ URL parametresini okumak için ekledik
+import { useSearchParams } from "next/navigation";
 import type { Product } from "@/lib/products/types";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
+import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton"; // YENİ: İskelet yapısını import ettik
 import { CART_MIN_QTY } from "@/components/cart/CartContext";
 
 export function ProductGrid({
@@ -20,9 +21,9 @@ export function ProductGrid({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const openRef = useRef<HTMLDivElement | null>(null);
-  const searchParams = useSearchParams(); // ✅ URL'deki parametreleri alır
+  const searchParams = useSearchParams();
 
-  // ✅ Ana sayfadan gelen 'open' parametresini kontrol et
+  // Ana sayfadan gelen 'open' parametresini kontrol et
   useEffect(() => {
     const openParam = searchParams.get("open");
     if (openParam) {
@@ -32,7 +33,7 @@ export function ProductGrid({
 
   const openIndex = useMemo(() => {
     if (!openId) return -1;
-    return products.findIndex((p) => String(p.id) === String(openId));
+    return products?.findIndex((p) => String(p.id) === String(openId)) ?? -1;
   }, [openId, products]);
 
   useEffect(() => {
@@ -40,6 +41,17 @@ export function ProductGrid({
       openRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [openId, openIndex]);
+
+  // YENİ: Ürünler yükleniyorsa veya liste boşsa Skeleton (İskelet) göster
+  if (!products || products.length === 0) {
+    return (
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+        {[...Array(8)].map((_, i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
