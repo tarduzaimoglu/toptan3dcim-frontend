@@ -12,6 +12,7 @@ import "swiper/css/pagination";
 
 const SITE_MORU = "#7C3AED"; 
 
+// Eski Supabase karmaşasını temizledik, Next.js otomatik WebP yapacak.
 function resolveThumbSrc(product: any) {
   const target = product.attributes || product;
   const raw = (typeof target?.imageUrl === "string" && target.imageUrl.trim() && target.imageUrl) ||
@@ -42,7 +43,7 @@ export default function ProductCarousel({ products }: { products: any[] }) {
         modules={[Autoplay, Pagination, EffectCoverflow]}
         className="w-full !overflow-visible product-slider" 
         breakpoints={{
-          0: { slidesPerView: 2 }, // Mobilde daha iyi görünmesi için 2'ye düşürebiliriz
+          0: { slidesPerView: 2 }, 
           768: { slidesPerView: 3 },
           1024: { slidesPerView: 5 },
         }}
@@ -56,16 +57,19 @@ export default function ProductCarousel({ products }: { products: any[] }) {
             <SwiperSlide key={item.id} className="!overflow-visible py-10">
               <Link href={`/products?open=${item.id}`}>
                 <div className="relative group rounded-2xl bg-white border border-slate-100 shadow-xl transition-all duration-300 cursor-pointer h-full flex flex-col">
-                  {/* YENİ: aspect-[3/4] ile dik formata uyum */}
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-slate-50">
+                  
+                  {/* YENİ: aspect-[3/4] ile dikey format ve tam oturan (çerçevesiz) tasarım */}
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-white border-b border-slate-100">
                     <Image
                       src={imgSrc}
                       alt={attr.title || attr.Title || "Ürün"}
                       fill
                       sizes="(max-width: 768px) 50vw, 20vw"
-                      className="object-contain p-2 mix-blend-multiply"
+                      // p-2 ve mix-blend silindi, resim tam oturacak.
+                      className="object-contain"
                     />
                   </div>
+                  
                   <div className="p-3 text-center flex-grow flex flex-col justify-center">
                     <h3 className="text-[11px] md:text-sm font-semibold text-slate-800 line-clamp-1">
                       {attr.title || attr.Title}
