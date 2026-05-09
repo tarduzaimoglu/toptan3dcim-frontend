@@ -20,23 +20,24 @@ export function CategoryTabs({
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
+  // Kaydırma kontrolü (Okları göster/gizle)
   const checkScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setShowLeftArrow(scrollLeft > 10);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+      setShowLeftArrow(scrollLeft > 15);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 15);
     }
   };
 
   useEffect(() => {
     checkScroll();
     window.addEventListener("resize", checkScroll);
-    return () => window.removeEventListener("scroll", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
   }, [categories]);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
-      const scrollAmount = 200;
+      const scrollAmount = 250;
       scrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -45,40 +46,38 @@ export function CategoryTabs({
   };
 
   return (
-    // Dış kapsayıcı: Üstten Header ile mesafeyi korur
-    <div className="group relative w-full overflow-visible pt-8 pb-4">
+    <div className="relative w-full overflow-visible py-8 px-1">
       
-      {/* Sol Ok */}
+      {/* Sol Navigasyon Oku */}
       {showLeftArrow && (
-        <div className="hidden md:flex absolute left-0 top-1/2 z-20 -translate-y-1/2 h-full items-center bg-gradient-to-r from-white via-white/80 to-transparent pr-12 pointer-events-none">
+        <div className="hidden md:flex absolute left-0 top-1/2 z-30 -translate-y-1/2 h-full items-center bg-gradient-to-r from-white via-white/70 to-transparent pr-16 pointer-events-none">
           <button
             onClick={() => scroll("left")}
-            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition-all hover:scale-110 hover:border-[#ff7a00] hover:text-[#ff7a00]"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm transition-all hover:border-[#ff7a00] hover:text-[#ff7a00] active:scale-90"
           >
-            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
           </button>
         </div>
       )}
 
-      {/* Sağ Ok */}
+      {/* Sağ Navigasyon Oku */}
       {showRightArrow && (
-        <div className="hidden md:flex absolute right-0 top-1/2 z-20 -translate-y-1/2 h-full items-center bg-gradient-to-l from-white via-white/80 to-transparent pl-12 pointer-events-none">
+        <div className="hidden md:flex absolute right-0 top-1/2 z-30 -translate-y-1/2 h-full items-center bg-gradient-to-l from-white via-white/70 to-transparent pl-16 pointer-events-none">
           <button
             onClick={() => scroll("right")}
-            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-md transition-all hover:scale-110 hover:border-[#ff7a00] hover:text-[#ff7a00]"
+            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm transition-all hover:border-[#ff7a00] hover:text-[#ff7a00] active:scale-90"
           >
-            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       )}
 
-      {/* Menü Konteyneri */}
+      {/* Menü Akışı */}
       <div
         ref={scrollRef}
         onScroll={checkScroll}
-        // KRİTİK DÜZELTME: py-5 (dikey padding) ekledik ki gölge ve ping noktası kırpılmasın.
-        // -my-5 (negatif margin) ile bu padding'in yarattığı fazla boşluğu dengeledik.
-        className="no-scrollbar flex w-full items-center gap-4 overflow-x-auto py-5 px-2 -my-5 scroll-smooth"
+        // py-3 sayesinde üstten ve alttan kesilme tamamen engellendi
+        className="no-scrollbar flex w-full items-center gap-3 overflow-x-auto py-3 scroll-smooth"
       >
         {categories.map((c) => {
           const isActive = c.key === active;
@@ -88,16 +87,17 @@ export function CategoryTabs({
               type="button"
               onClick={() => onChange(c.key)}
               className={[
-                "relative flex h-11 shrink-0 items-center justify-center rounded-2xl px-7 text-[14.5px] font-bold tracking-tight transition-all duration-300",
+                "relative flex h-10 shrink-0 items-center justify-center rounded-full px-7 text-[14px] font-bold tracking-tight transition-all duration-300",
                 isActive
-                  ? "bg-[#ff7a00] text-white shadow-[0_12px_24px_-8px_rgba(255,122,0,0.6)] scale-105 z-10"
-                  : "bg-slate-100/60 text-slate-500 border border-transparent hover:bg-white hover:border-slate-200 hover:text-slate-900 active:scale-95",
+                  ? "bg-[#ff7a00] text-white shadow-md scale-[1.03] z-10"
+                  : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-800 active:scale-95",
               ].join(" ")}
             >
+              {/* Modern Bildirim Rozeti: Butona tam entegre */}
               {isActive && (
-                 <span className="absolute -top-1.5 -right-1 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff7a00] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#ff7a00]"></span>
+                 <span className="absolute -top-1 -right-0.5 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white border-2 border-[#ff7a00]"></span>
                  </span>
               )}
               {c.label}
