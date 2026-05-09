@@ -14,14 +14,13 @@ export default async function ProductsPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8">
-        <div className="mt-6">
-          <ProductsClient
-            products={products}
-            categories={categories}
-            defaultCat="featured"
-          />
-        </div>
+      {/* py-8 yerine pt-4 ile Header'a yaklaştırdık, max-width'i standartlaştırdık */}
+      <div className="mx-auto w-full max-w-7xl px-4 md:px-6 pt-4 pb-12">
+        <ProductsClient
+          products={products}
+          categories={categories}
+          defaultCat="featured"
+        />
       </div>
     </main>
   );

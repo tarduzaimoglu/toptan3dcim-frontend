@@ -20,7 +20,6 @@ export function CategoryTabs({
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
-  // Kaydırma kontrolü (Okları göster/gizle)
   const checkScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -46,28 +45,14 @@ export function CategoryTabs({
   };
 
   return (
-    <div className="relative w-full overflow-visible py-8 px-1">
+    // py-8 yerine py-4 yaparak dikey mesafeyi daralttık
+    <div className="relative w-full overflow-visible py-4 px-0">
       
-      {/* Sol Navigasyon Oku */}
+      {/* Navigasyon Okları */}
       {showLeftArrow && (
-        <div className="hidden md:flex absolute left-0 top-1/2 z-30 -translate-y-1/2 h-full items-center bg-gradient-to-r from-white via-white/70 to-transparent pr-16 pointer-events-none">
-          <button
-            onClick={() => scroll("left")}
-            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm transition-all hover:border-[#ff7a00] hover:text-[#ff7a00] active:scale-90"
-          >
+        <div className="hidden md:flex absolute left-0 top-1/2 z-30 -translate-y-1/2 h-full items-center bg-gradient-to-r from-white via-white/80 to-transparent pr-12 pointer-events-none">
+          <button onClick={() => scroll("left")} className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition-all hover:border-[#ff7a00] hover:text-[#ff7a00]">
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
-          </button>
-        </div>
-      )}
-
-      {/* Sağ Navigasyon Oku */}
-      {showRightArrow && (
-        <div className="hidden md:flex absolute right-0 top-1/2 z-30 -translate-y-1/2 h-full items-center bg-gradient-to-l from-white via-white/70 to-transparent pl-16 pointer-events-none">
-          <button
-            onClick={() => scroll("right")}
-            className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm transition-all hover:border-[#ff7a00] hover:text-[#ff7a00] active:scale-90"
-          >
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       )}
@@ -76,8 +61,8 @@ export function CategoryTabs({
       <div
         ref={scrollRef}
         onScroll={checkScroll}
-        // py-3 sayesinde üstten ve alttan kesilme tamamen engellendi
-        className="no-scrollbar flex w-full items-center gap-3 overflow-x-auto py-3 scroll-smooth"
+        // overflow-x-auto yanlardan kesilmeyi önlemek için px-1 kullanıyoruz
+        className="no-scrollbar flex w-full items-center gap-3 overflow-x-auto py-2 px-1 scroll-smooth"
       >
         {categories.map((c) => {
           const isActive = c.key === active;
@@ -93,7 +78,6 @@ export function CategoryTabs({
                   : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-800 active:scale-95",
               ].join(" ")}
             >
-              {/* Modern Bildirim Rozeti: Butona tam entegre */}
               {isActive && (
                  <span className="absolute -top-1 -right-0.5 flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
@@ -105,6 +89,14 @@ export function CategoryTabs({
           );
         })}
       </div>
+
+      {showRightArrow && (
+        <div className="hidden md:flex absolute right-0 top-1/2 z-30 -translate-y-1/2 h-full items-center bg-gradient-to-l from-white via-white/80 to-transparent pl-12 pointer-events-none">
+          <button onClick={() => scroll("right")} className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition-all hover:border-[#ff7a00] hover:text-[#ff7a00]">
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      )}
 
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
