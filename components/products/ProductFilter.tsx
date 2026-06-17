@@ -25,7 +25,6 @@ interface ProductFilterProps {
   onClearAll: () => void;
 }
 
-// ODAK KAYBINI ÖNLEMEK İÇİN BİLEŞENİ DIŞARIYA ÇIKARDIK (STANDALONE SUB-COMPONENT)
 interface FilterContentProps {
   categories: any[];
   availableColors: ColorOption[];
@@ -64,7 +63,9 @@ function FilterContent({
   return (
     <div className="space-y-6 relative">
       
-      {/* 1. TRENDYOL TARZI ARMA ÇUBUĞU VE ÖNERİLER */}
+      {/* 1. TRENDYOL TARZI ARAMA ÇUBUĞU VE ÖNERİLER (ŞİMDİLİK GİZLENDİ) */}
+      {/* İleride açmak istediğinde sadece bu yorum satırlarını kaldırabilirsin. */}
+      {/* 
       <div className="relative" ref={suggestionRef}>
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
           <Search size={16} className="text-gray-400" />
@@ -88,7 +89,6 @@ function FilterContent({
           className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5733]/20 focus:border-[#FF5733] transition-all"
         />
 
-        {/* Canlı Öneri Dropdown Menüsü */}
         {showSuggestions && suggestions.length > 0 && (
           <div className="absolute left-0 right-0 mt-1.5 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-gray-50 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="px-3 py-1.5 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">İlgili Ürün Önerileri</div>
@@ -110,6 +110,7 @@ function FilterContent({
           </div>
         )}
       </div>
+      */}
 
       {/* 2. SIRALAMA SEÇENEKLERİ */}
       <div className="hidden lg:block">
@@ -232,7 +233,7 @@ export default function ProductFilter({
   return (
     <>
       {/* MASAÜSTÜ */}
-      <div className="hidden lg:block w-1/4 pr-8 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+      <div className="hidden lg:block w-1/4 pr-8 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Filtreler</h2>
           {activeFilterCount > 0 && (
@@ -296,11 +297,11 @@ export default function ProductFilter({
       <div className={`fixed top-0 right-0 h-full w-[85vw] max-w-sm bg-white z-[70] shadow-2xl transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${isMobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white">
           <h2 className="text-lg font-bold text-gray-900">Filtrele</h2>
-          <button onClick={() => setIsMobileOpen(false)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors">
+          <button onClick={() => setIsMobileOpen(false)} className="p-2 -mr-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors">
             <X size={20} className="text-gray-600" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
           <FilterContent 
             categories={categories}
             availableColors={availableColors}
@@ -319,9 +320,9 @@ export default function ProductFilter({
             onSortChange={onSortChange}
           />
         </div>
-        <div className="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-3">
-           <button onClick={onClearAll} className="py-3 font-semibold text-gray-700 bg-gray-100 rounded-xl">Temizle</button>
-           <button onClick={() => setIsMobileOpen(false)} className="py-3 font-semibold text-white bg-[#FF5733] rounded-xl shadow-lg shadow-[#FF5733]/30">Uygula</button>
+        <div className="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+           <button onClick={onClearAll} className="py-3.5 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Temizle</button>
+           <button onClick={() => setIsMobileOpen(false)} className="py-3.5 font-semibold text-white bg-[#FF5733] hover:bg-[#e64a2e] rounded-xl shadow-lg shadow-[#FF5733]/30 transition-colors">Uygula</button>
         </div>
       </div>
     </>
