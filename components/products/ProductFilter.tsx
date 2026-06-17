@@ -3,18 +3,31 @@
 import { useState } from "react";
 import { Filter, X, ChevronDown, Check, Loader2 } from "lucide-react";
 
+// YENİ VE DOĞRU TİP TANIMLAMALARI
+interface ColorOption {
+  id: string;
+  label: string;
+  hex: string;
+}
+
 interface ProductFilterProps {
   categories: any[];
-  availableColors: { id: string; label: string; hex: string }[];
+  availableColors: ColorOption[];
   selectedCategory: string;
   selectedColors: string[];
   onCategoryChange: (catKey: string) => void;
   onColorToggle: (colorCode: string) => void;
-  isLoading: boolean; // YENİ
+  isLoading: boolean;
 }
 
 export default function ProductFilter({
-  categories, availableColors, selectedCategory, selectedColors, onCategoryChange, onColorToggle, isLoading
+  categories,
+  availableColors,
+  selectedCategory,
+  selectedColors,
+  onCategoryChange,
+  onColorToggle,
+  isLoading,
 }: ProductFilterProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -27,7 +40,6 @@ export default function ProductFilter({
           Kategoriler <ChevronDown size={16} />
         </h3>
         <div className="space-y-1">
-          {/* Tüm Ürünler Butonu */}
           <button 
             onClick={() => onCategoryChange("all")}
             className={`w-full text-left px-3 py-2 rounded-lg transition-all flex items-center space-x-3 
@@ -39,7 +51,6 @@ export default function ProductFilter({
             <span>Tüm Ürünler</span>
           </button>
 
-          {/* Dinamik Kategoriler */}
           {categories.map((cat) => (
             <button 
               key={cat.key}
@@ -89,7 +100,6 @@ export default function ProductFilter({
 
   return (
     <>
-      {/* Masaüstü */}
       <div className="hidden lg:block w-1/4 pr-8 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar relative">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -102,11 +112,10 @@ export default function ProductFilter({
         <FilterContent />
       </div>
 
-      {/* Mobil Görünüm */}
       <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
         <button onClick={() => setIsMobileOpen(true)} className="bg-[#333333] text-white px-6 py-3 rounded-full font-medium shadow-xl flex items-center space-x-2">
           {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Filter size={18} />}
-          <span>Filtrele</span>
+          <span>Filtrele {(selectedColors.length > 0 || selectedCategory !== "all") && "• Aktif"}</span>
         </button>
       </div>
 
