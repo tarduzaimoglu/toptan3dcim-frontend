@@ -89,7 +89,7 @@ export default function ProductFilter({
               e.currentTarget.blur();
             }
           }}
-          placeholder="Ürünlerde ara... (Enter'a bas)"
+          placeholder="Ürünlerde ara..."
           className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5733]/20 focus:border-[#FF5733] transition-all"
         />
 
