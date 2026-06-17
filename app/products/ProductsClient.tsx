@@ -187,4 +187,4 @@ export default function ProductsClient({ products, categories }: { products: Pro
       <CartFab />
     </div>
   );
-}v
+}
