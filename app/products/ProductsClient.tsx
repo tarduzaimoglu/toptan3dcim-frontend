@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import CatalogPagination from "@/components/products/CatalogPagination";
 import { CartFab } from "@/components/cart/CartIndicator";
@@ -52,21 +52,28 @@ export function getClosestStandardColor(hex: string) {
 }
 
 export default function ProductsClient({ products, categories }: { products: Product[]; categories: Category[]; }) {
-  const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  
-  // YÜKLENİYOR DURUMU İÇİN (Performans İyileştirmesi)
-  const [isPending, startTransition] = useTransition();
 
+  // URL'yi sessizce güncellemek için yardımcı fonksiyon
+  const updateUrl = (nextParams: URLSearchParams) => {
+    const queryString = nextParams.toString();
+    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+    window.history.replaceState(null, '', newUrl);
+  };
+
+  // --- YEREL STATE'LER (ANINDA TEPKİ İÇİN) ---
+  const [activeCategory, setActiveCategory] = useState<string>(sp?.get("category") || "all");
+  const [selectedColors, setSelectedColors] = useState<string[]>(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
+  const [page, setPage] = useState<number>(Number(sp?.get("page") ?? "1"));
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
 
-  // URL'den Filtre Parametrelerini Oku
-  const activeCategory = sp?.get("category") || "all";
-  const colorsParam = sp?.get("colors");
-  const selectedColors = useMemo(() => colorsParam ? colorsParam.split(",") : [], [colorsParam]);
-  const pageFromUrl = useMemo(() => Number(sp?.get("page") ?? "1"), [sp]);
-  const [page, setPage] = useState<number>(pageFromUrl);
+  // Tarayıcı geri/ileri tuşlarına basıldığında state'i URL ile senkronize et
+  useEffect(() => {
+    setActiveCategory(sp?.get("category") || "all");
+    setSelectedColors(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
+    setPage(Number(sp?.get("page") ?? "1"));
+  }, [sp]);
 
   // Müşterinin ürünlerinden Ana Renkleri çıkart
   const availableColors = useMemo(() => {
@@ -109,44 +116,48 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const pageCount = Math.max(1, Math.ceil(filteredAll.length / PAGE_SIZE));
   const paged = filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // --- IŞIK HIZINDA FİLTRELEME AKSİYONLARI ---
+
   function changePage(nextPage: number) {
-    startTransition(() => {
-      const next = new URLSearchParams(sp?.toString() ?? "");
-      next.set("page", String(nextPage));
-      router.push(`${pathname}?${next.toString()}`, { scroll: true });
-    });
+    setPage(nextPage); // Anında ekranı değiştir
+    const next = new URLSearchParams(sp?.toString() ?? "");
+    next.set("page", String(nextPage));
+    updateUrl(next); // URL'yi arka planda sessizce güncelle
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function handleCategoryChange(catKey: string) {
-    startTransition(() => {
-      const next = new URLSearchParams(sp?.toString() ?? "");
-      if (catKey === "all") next.delete("category");
-      else next.set("category", catKey);
-      next.delete("page");
-      router.push(`${pathname}?${next.toString()}`, { scroll: true });
-    });
+    setActiveCategory(catKey); // Anında ekranı değiştir
+    setPage(1);
+    
+    const next = new URLSearchParams(sp?.toString() ?? "");
+    if (catKey === "all") next.delete("category");
+    else next.set("category", catKey);
+    next.delete("page");
+    updateUrl(next);
   }
 
   function handleColorToggle(colorId: string) {
-    startTransition(() => {
-      const next = new URLSearchParams(sp?.toString() ?? "");
-      let updatedColors = [...selectedColors];
-      if (updatedColors.includes(colorId)) updatedColors = updatedColors.filter(c => c !== colorId);
-      else updatedColors.push(colorId);
+    // 1. Array'i anında güncelle
+    let updatedColors = [...selectedColors];
+    if (updatedColors.includes(colorId)) updatedColors = updatedColors.filter(c => c !== colorId);
+    else updatedColors.push(colorId);
 
-      if (updatedColors.length > 0) next.set("colors", updatedColors.join(","));
-      else next.delete("colors");
-      
-      next.delete("page");
-      router.push(`${pathname}?${next.toString()}`, { scroll: true });
-    });
+    setSelectedColors(updatedColors); // Anında ekranı değiştir
+    setPage(1);
+
+    // 2. URL'yi arka planda ayarla
+    const next = new URLSearchParams(sp?.toString() ?? "");
+    if (updatedColors.length > 0) next.set("colors", updatedColors.join(","));
+    else next.delete("colors");
+    next.delete("page");
+    updateUrl(next);
   }
 
   return (
     <div className="container mx-auto px-4 mt-6 max-w-[1400px]">
       <div className="flex flex-col lg:flex-row relative gap-4 lg:gap-8">
         
-        {/* Filtreye isPending gönderiyoruz */}
         <ProductFilter 
           categories={categories} 
           availableColors={availableColors}
@@ -154,37 +165,10 @@ export default function ProductsClient({ products, categories }: { products: Pro
           selectedColors={selectedColors}
           onCategoryChange={handleCategoryChange}
           onColorToggle={handleColorToggle}
-          isLoading={isPending}
+          isLoading={false} // Yükleme animasyonunu tamamen kapattık
         />
         
         <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh] relative">
-          
-          {/* YÜKLENİYOR OVERLAY EFEKTİ */}
-          {isPending && (
-            <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-start justify-center pt-20">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF5733]"></div>
-            </div>
-          )}
-
           {filteredAll.length === 0 ? (
-             <div className="flex items-center justify-center h-64 text-gray-500">Bu filtrelere uygun ürün bulunamadı.</div>
+             <div className="flex items-center justify-center h-64 text-gray-500 font-medium text-lg">Bu filtrelere uygun ürün bulunamadı.</div>
           ) : (
-            // Seçili rengi ProductGrid'e gönderiyoruz (Görsel değişimi için)
-            <ProductGrid
-              products={paged}
-              selectedColors={selectedColors} // YENİ EKLENDİ
-              qtyTextById={qtyById}
-              getQtyText={(id: any) => qtyById[String(id)] ?? String(CART_MIN_QTY)}
-              onQtyTextChange={(id: any, v: string) => setQtyById((prev) => ({ ...prev, [String(id)]: v }))}
-            />
-          )}
-
-          <div className="mt-12 mb-24 lg:mb-8 flex justify-center">
-            <CatalogPagination page={page} pageCount={pageCount} onChange={changePage} />
-          </div>
-        </div>
-      </div>
-      <CartFab />
-    </div>
-  );
-}
