@@ -13,7 +13,6 @@ type Category = { key: string; label: string };
 
 const PAGE_SIZE = 20;
 
-// AKILLI RENK GRUPLAMA
 const STANDARD_COLORS = [
   { id: 'black', label: 'Siyah', hex: '#111111' },
   { id: 'white', label: 'Beyaz', hex: '#FFFFFF' },
@@ -51,46 +50,61 @@ export function getClosestStandardColor(hex: string) {
 export default function ProductsClient({ products, categories }: { products: Product[]; categories: Category[]; }) {
   const pathname = usePathname();
   const sp = useSearchParams();
-  const router = useRouter(); // Next.js'in güvenli router'ını geri getirdik
+  const router = useRouter();
 
-  // Güvenli URL Güncelleme Yardımcısı
-  const updateUrl = useCallback((updates: Record<string, string | null>) => {
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    Object.entries(updates).forEach(([key, value]) => {
-      if (!value) next.delete(key);
-      else next.set(key, value);
-    });
-    const newUrl = next.toString() ? `${pathname}?${next.toString()}` : pathname;
-    router.replace(newUrl, { scroll: false }); // Çökmeyi engelleyen Next.js komutu
-  }, [pathname, router, sp]);
+  // URL'den gelen ilk değerler
+  const initialSearch = sp?.get("q") || "";
+  const initialCats = useMemo(() => sp?.get("cats") ? sp!.get("cats")!.split(",") : [], [sp]);
+  const initialColors = useMemo(() => sp?.get("colors") ? sp!.get("colors")!.split(",") : [], [sp]);
+  const initialSort = sp?.get("sort") || "newest";
+  const initialPage = Number(sp?.get("page") ?? "1");
 
   // --- MERKEZİ DEVLETLER (STATE) ---
-  const [searchQuery, setSearchQuery] = useState(sp?.get("q") || "");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(sp?.get("cats") ? sp!.get("cats")!.split(",") : []);
-  const [selectedColors, setSelectedColors] = useState<string[]>(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
-  const [sortOption, setSortOption] = useState(sp?.get("sort") || "newest");
-  const [page, setPage] = useState<number>(Number(sp?.get("page") ?? "1"));
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCats);
+  const [selectedColors, setSelectedColors] = useState<string[]>(initialColors);
+  const [sortOption, setSortOption] = useState(initialSort);
+  const [page, setPage] = useState<number>(initialPage);
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
 
-  // Tarayıcı Geri/İleri Senkronizasyonu
+  // URL değiştiğinde state'leri (arama hariç) güncelle
   useEffect(() => {
-    setSearchQuery(sp?.get("q") || "");
     setSelectedCategories(sp?.get("cats") ? sp!.get("cats")!.split(",") : []);
     setSelectedColors(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
     setSortOption(sp?.get("sort") || "newest");
     setPage(Number(sp?.get("page") ?? "1"));
   }, [sp]);
 
-  // ARAMA ÇUBUĞU İÇİN GECİKMELİ (DEBOUNCE) URL GÜNCELLEMESİ
-  // Kullanıcı hızlıca yazarken siteyi çökertmemesi için URL güncellemeyi 400ms bekletir
+  // URL Güncelleme Yardımcısı
+  const updateUrl = useCallback((updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(window.location.search);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) next.delete(key);
+      else next.set(key, value);
+    });
+    const newUrl = next.toString() ? `${pathname}?${next.toString()}` : pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [pathname, router]);
+
+  // ARAMA ÇUBUĞU İÇİN GÜVENLİ VE GECİKMELİ URL GÜNCELLEMESİ (Debounce)
   useEffect(() => {
+    const urlSearch = sp?.get("q") || "";
+    if (searchQuery === urlSearch) return;
+
     const timeout = setTimeout(() => {
-      if ((sp?.get("q") || "") !== searchQuery) {
-        updateUrl({ q: searchQuery || null, page: null });
-      }
-    }, 400);
+      updateUrl({ q: searchQuery || null, page: null });
+    }, 450);
+
     return () => clearTimeout(timeout);
   }, [searchQuery, sp, updateUrl]);
+
+  // Sayfa dışarıdan (örn. URL elle değiştirilirse) q parametresi alırsa inputu eşitle
+  useEffect(() => {
+    const urlSearch = sp?.get("q") || "";
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+    }
+  }, [sp]);
 
   // Renk Filtresi İçin Ürünlerden Renkleri Çıkar
   const availableColors = useMemo(() => {
@@ -150,7 +164,7 @@ export default function ProductsClient({ products, categories }: { products: Pro
         case "price_desc": return priceB - priceA;
         case "minqty_asc": return minQtyA - minQtyB;
         case "minqty_desc": return minQtyB - minQtyA;
-        default: return dateB - dateA; // newest
+        default: return dateB - dateA;
       }
     });
   }, [searchQuery, selectedCategories, selectedColors, sortOption, products]);
@@ -165,12 +179,10 @@ export default function ProductsClient({ products, categories }: { products: Pro
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleSearchChange(query: string) {
-    // Sadece State'i günceller (Ürünler anında kırpılır). 
-    // URL güncellemesini yukarıdaki useEffect (setTimeout) halleder.
+  const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
     setPage(1);
-  }
+  }, []);
 
   function handleSortChange(sort: string) {
     setSortOption(sort);
