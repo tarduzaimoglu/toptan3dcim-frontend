@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Filter, X, ChevronDown, Check } from 'lucide-react';
+import { useState } from "react";
+import { Filter, X, ChevronDown, Check } from "lucide-react";
 
 interface Category {
   key: string;
@@ -92,7 +92,6 @@ export default function ProductFilter({
                 style={{ backgroundColor: color.code }}
                 title={color.name}
               >
-                {/* Koyu renklerin üzerinde beyaz tik, açık renklerin üzerinde gri tik göstermek için basit bir kontrol */}
                 {isSelected && (
                   <Check size={14} color={color.code.toUpperCase() === '#FFFFFF' ? '#333' : '#FFF'} />
                 )}
@@ -113,7 +112,7 @@ export default function ProductFilter({
           <h2 className="text-xl font-bold text-gray-900">Filtreler</h2>
           {(selectedCategory || selectedColors.length > 0) && (
             <button 
-              onClick={() => { onCategoryChange("featured"); selectedColors.forEach(c => onColorToggle(c)); /* Basit temizleme */ }} 
+              onClick={() => { onCategoryChange("featured"); selectedColors.forEach(c => onColorToggle(c)); }} 
               className="text-sm text-[#FF5733] hover:underline font-medium"
             >
               Temizle
@@ -153,3 +152,6 @@ export default function ProductFilter({
           </button>
         </div>
       </div>
+    </>
+  );
+}
