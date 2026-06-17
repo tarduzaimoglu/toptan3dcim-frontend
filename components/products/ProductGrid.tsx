@@ -5,20 +5,25 @@ import { useSearchParams } from "next/navigation";
 import type { Product } from "@/lib/products/types";
 import { ProductCard } from "@/components/products/ProductCard";
 import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
-import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton"; // YENİ: İskelet yapısını import ettik
+import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
 import { CART_MIN_QTY } from "@/components/cart/CartContext";
+
+// YENİ: TypeScript hatasını çözmek için 'selectedColors' prop'unu ekledik
+type Props = {
+  products: Product[];
+  qtyTextById: Record<string, string>;
+  getQtyText: (id: string) => string;
+  onQtyTextChange: (id: string, v: string) => void;
+  selectedColors?: string[]; 
+};
 
 export function ProductGrid({
   products,
   qtyTextById,
   getQtyText,
   onQtyTextChange,
-}: {
-  products: Product[];
-  qtyTextById: Record<string, string>;
-  getQtyText: (id: string) => string;
-  onQtyTextChange: (id: string, v: string) => void;
-}) {
+  selectedColors = [], // Varsayılan değer atadık
+}: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const openRef = useRef<HTMLDivElement | null>(null);
   const searchParams = useSearchParams();
@@ -42,7 +47,7 @@ export function ProductGrid({
     }
   }, [openId, openIndex]);
 
-  // YENİ: Ürünler yükleniyorsa veya liste boşsa Skeleton (İskelet) göster
+  // Ürünler yükleniyorsa veya liste boşsa Skeleton (İskelet) göster
   if (!products || products.length === 0) {
     return (
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
@@ -78,6 +83,7 @@ export function ProductGrid({
             key={pid}
             product={p}
             isOpen={false}
+            selectedColors={selectedColors} // YENİ: Renk bilgisini karta aktardık
             onOpen={() => setOpenId((prev) => (prev === pid ? null : pid))}
             qtyText={qtyText}
             setQtyText={(v: string) => onQtyTextChange(pid, v)}
