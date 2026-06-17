@@ -52,30 +52,31 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const sp = useSearchParams();
   const router = useRouter();
 
-  // URL'den gelen ilk değerler
+  // URL Parametrelerini Çözümleme
   const initialSearch = sp?.get("q") || "";
   const initialCats = useMemo(() => sp?.get("cats") ? sp!.get("cats")!.split(",") : [], [sp]);
   const initialColors = useMemo(() => sp?.get("colors") ? sp!.get("colors")!.split(",") : [], [sp]);
   const initialSort = sp?.get("sort") || "newest";
   const initialPage = Number(sp?.get("page") ?? "1");
 
-  // --- MERKEZİ DEVLETLER (STATE) ---
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  // --- MERKEZİ STATE YAPISI ---
+  const [searchQuery, setSearchQuery] = useState(initialSearch); // Sadece klavyeden yazılan metni tutar (URL'i tetiklemez)
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCats);
   const [selectedColors, setSelectedColors] = useState<string[]>(initialColors);
   const [sortOption, setSortOption] = useState(initialSort);
   const [page, setPage] = useState<number>(initialPage);
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
 
-  // URL değiştiğinde state'leri (arama hariç) güncelle
+  // URL manuel değiştiğinde state'leri güncel tutan koruma kalkanı
   useEffect(() => {
     setSelectedCategories(sp?.get("cats") ? sp!.get("cats")!.split(",") : []);
     setSelectedColors(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
     setSortOption(sp?.get("sort") || "newest");
     setPage(Number(sp?.get("page") ?? "1"));
+    setSearchQuery(sp?.get("q") || "");
   }, [sp]);
 
-  // URL Güncelleme Yardımcısı
+  // Sayfayı kitlemeyen, güvenli Next.js URL Güncelleyici
   const updateUrl = useCallback((updates: Record<string, string | null>) => {
     const next = new URLSearchParams(window.location.search);
     Object.entries(updates).forEach(([key, value]) => {
@@ -86,29 +87,10 @@ export default function ProductsClient({ products, categories }: { products: Pro
     router.replace(newUrl, { scroll: false });
   }, [pathname, router]);
 
-  // ARAMA ÇUBUĞU İÇİN GÜVENLİ VE GECİKMELİ URL GÜNCELLEMESİ (Debounce)
-  useEffect(() => {
-    const urlSearch = sp?.get("q") || "";
-    if (searchQuery === urlSearch) return;
-
-    const timeout = setTimeout(() => {
-      updateUrl({ q: searchQuery || null, page: null });
-    }, 450);
-
-    return () => clearTimeout(timeout);
-  }, [searchQuery, sp, updateUrl]);
-
-  // Sayfa dışarıdan (örn. URL elle değiştirilirse) q parametresi alırsa inputu eşitle
-  useEffect(() => {
-    const urlSearch = sp?.get("q") || "";
-    if (urlSearch !== searchQuery) {
-      setSearchQuery(urlSearch);
-    }
-  }, [sp]);
-
-  // Renk Filtresi İçin Ürünlerden Renkleri Çıkar
+  // Sitedeki aktif ürünlerden dinamik olarak renk paleti çıkartma
   const availableColors = useMemo(() => {
     const usedStandardColorIds = new Set<string>();
+    if (!products) return [];
     products.forEach((p) => {
       if (p.variants && Array.isArray(p.variants)) {
         p.variants.forEach((v: any) => {
@@ -119,11 +101,11 @@ export default function ProductsClient({ products, categories }: { products: Pro
     return STANDARD_COLORS.filter(color => usedStandardColorIds.has(color.id));
   }, [products]);
 
-  // --- ANA FİLTRELEME VE SIRALAMA ALGORİTMASI ---
+  // --- ANA FİLTRELEME VE GELİŞMİŞ SIRALAMA ALGORİTMASI ---
   const filteredAll = useMemo(() => {
-    let result = products;
+    let result = products || [];
 
-    // 1. Arama Çubuğu (Canlı Kırpılma)
+    // 1. Ürün Arama Filtresi (URL'den gelen veya inputa girilen "Canlı Kırpma")
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(p => 
@@ -132,12 +114,12 @@ export default function ProductsClient({ products, categories }: { products: Pro
       );
     }
 
-    // 2. Çoklu Kategori
+    // 2. Çoklu Kategori Filtresi
     if (selectedCategories.length > 0) {
       result = result.filter((p) => selectedCategories.includes(p.category));
     }
 
-    // 3. Renkler (Renksiz ürünler her zaman gösterilir kuralı)
+    // 3. Akıllı Renk Filtresi (KURAL: Renksiz varyantı olan ürünler her halükarda ekranda kalır)
     if (selectedColors.length > 0) {
       result = result.filter((p) => {
         const hasNoColors = !p.variants || !Array.isArray(p.variants) || p.variants.length === 0;
@@ -150,7 +132,7 @@ export default function ProductsClient({ products, categories }: { products: Pro
       });
     }
 
-    // 4. Sıralama Algoritması
+    // 4. Sıralama İşlemleri (Fiyat Artan/Azalan & Minimum Satın Alma Adedi Artan/Azalan)
     return [...result].sort((a, b) => {
       const priceA = Number(a.wholesalePrice) || 0;
       const priceB = Number(b.wholesalePrice) || 0;
@@ -164,7 +146,7 @@ export default function ProductsClient({ products, categories }: { products: Pro
         case "price_desc": return priceB - priceA;
         case "minqty_asc": return minQtyA - minQtyB;
         case "minqty_desc": return minQtyB - minQtyA;
-        default: return dateB - dateA;
+        default: return dateB - dateA; // En Yeniler
       }
     });
   }, [searchQuery, selectedCategories, selectedColors, sortOption, products]);
@@ -179,10 +161,16 @@ export default function ProductsClient({ products, categories }: { products: Pro
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // Kullanıcı arama barına yazarken sadece kelimeyi hafızaya alır, URL'e dokunmaz (Donma yapmaz)
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
     setPage(1);
   }, []);
+
+  // YALNIZCA ENTER'A BASILDIĞINDA URL GÜNCELLENİR (TRENDYOL STİLİ)
+  const handleSearchSubmit = useCallback((query: string) => {
+    updateUrl({ q: query || null, page: null });
+  }, [updateUrl]);
 
   function handleSortChange(sort: string) {
     setSortOption(sort);
@@ -230,9 +218,11 @@ export default function ProductsClient({ products, categories }: { products: Pro
           selectedColors={selectedColors}
           searchQuery={searchQuery}
           sortOption={sortOption}
+          allProducts={products} // Öneri listesi oluşturulması için tüm listeyi filtreye yolladık
           onCategoryToggle={handleCategoryToggle}
           onColorToggle={handleColorToggle}
           onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
           onSortChange={handleSortChange}
           onClearAll={clearAllFilters}
         />
