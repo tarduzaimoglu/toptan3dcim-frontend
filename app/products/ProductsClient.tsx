@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import CatalogPagination from "@/components/products/CatalogPagination";
 import { CartFab } from "@/components/cart/CartIndicator";
@@ -51,16 +51,18 @@ export function getClosestStandardColor(hex: string) {
 export default function ProductsClient({ products, categories }: { products: Product[]; categories: Category[]; }) {
   const pathname = usePathname();
   const sp = useSearchParams();
+  const router = useRouter(); // Next.js'in güvenli router'ını geri getirdik
 
-  // URL Güncelleme Yardımcısı
-  const updateUrl = (updates: Record<string, string | null>) => {
+  // Güvenli URL Güncelleme Yardımcısı
+  const updateUrl = useCallback((updates: Record<string, string | null>) => {
     const next = new URLSearchParams(sp?.toString() ?? "");
     Object.entries(updates).forEach(([key, value]) => {
       if (!value) next.delete(key);
       else next.set(key, value);
     });
-    window.history.replaceState(null, '', next.toString() ? `${pathname}?${next.toString()}` : pathname);
-  };
+    const newUrl = next.toString() ? `${pathname}?${next.toString()}` : pathname;
+    router.replace(newUrl, { scroll: false }); // Çökmeyi engelleyen Next.js komutu
+  }, [pathname, router, sp]);
 
   // --- MERKEZİ DEVLETLER (STATE) ---
   const [searchQuery, setSearchQuery] = useState(sp?.get("q") || "");
@@ -79,6 +81,17 @@ export default function ProductsClient({ products, categories }: { products: Pro
     setPage(Number(sp?.get("page") ?? "1"));
   }, [sp]);
 
+  // ARAMA ÇUBUĞU İÇİN GECİKMELİ (DEBOUNCE) URL GÜNCELLEMESİ
+  // Kullanıcı hızlıca yazarken siteyi çökertmemesi için URL güncellemeyi 400ms bekletir
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if ((sp?.get("q") || "") !== searchQuery) {
+        updateUrl({ q: searchQuery || null, page: null });
+      }
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, sp, updateUrl]);
+
   // Renk Filtresi İçin Ürünlerden Renkleri Çıkar
   const availableColors = useMemo(() => {
     const usedStandardColorIds = new Set<string>();
@@ -96,10 +109,13 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const filteredAll = useMemo(() => {
     let result = products;
 
-    // 1. Arama Çubuğu
+    // 1. Arama Çubuğu (Canlı Kırpılma)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
+      result = result.filter(p => 
+        String(p.title || "").toLowerCase().includes(q) || 
+        String(p.description || "").toLowerCase().includes(q)
+      );
     }
 
     // 2. Çoklu Kategori
@@ -107,11 +123,11 @@ export default function ProductsClient({ products, categories }: { products: Pro
       result = result.filter((p) => selectedCategories.includes(p.category));
     }
 
-    // 3. Renkler (ÖZEL KURAL: Renksiz ürünler her zaman gösterilir)
+    // 3. Renkler (Renksiz ürünler her zaman gösterilir kuralı)
     if (selectedColors.length > 0) {
       result = result.filter((p) => {
         const hasNoColors = !p.variants || !Array.isArray(p.variants) || p.variants.length === 0;
-        if (hasNoColors) return true; // Kullanıcı kuralı: Renksizleri geçiş izni ver!
+        if (hasNoColors) return true; 
         
         return p.variants.some((v: any) => {
           if (!v.ColorCode) return false;
@@ -122,7 +138,6 @@ export default function ProductsClient({ products, categories }: { products: Pro
 
     // 4. Sıralama Algoritması
     return [...result].sort((a, b) => {
-      // Değerleri güvenli bir şekilde sayıya çevirme
       const priceA = Number(a.wholesalePrice) || 0;
       const priceB = Number(b.wholesalePrice) || 0;
       const minQtyA = parseInt(a.minQty || a.minQtyText) || 1;
@@ -151,9 +166,10 @@ export default function ProductsClient({ products, categories }: { products: Pro
   }
 
   function handleSearchChange(query: string) {
+    // Sadece State'i günceller (Ürünler anında kırpılır). 
+    // URL güncellemesini yukarıdaki useEffect (setTimeout) halleder.
     setSearchQuery(query);
     setPage(1);
-    updateUrl({ q: query || null, page: null });
   }
 
   function handleSortChange(sort: string) {
@@ -211,7 +227,6 @@ export default function ProductsClient({ products, categories }: { products: Pro
         
         <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh] relative pt-2 lg:pt-0">
           
-          {/* Mobil Cihazlarda "X ürün bulundu" Bilgisi */}
           <div className="lg:hidden mb-4 text-sm text-gray-500 font-medium px-1">
             {filteredAll.length} ürün listeleniyor
           </div>
