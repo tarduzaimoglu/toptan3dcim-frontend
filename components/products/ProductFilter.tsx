@@ -16,57 +16,52 @@ interface ProductFilterProps {
   selectedColors: string[];
   searchQuery: string;
   sortOption: string;
-  allProducts: any[]; // Canlı öneriler üretebilmek için tüm ürünleri aldık
+  allProducts: any[];
   onCategoryToggle: (catKey: string) => void;
   onColorToggle: (colorCode: string) => void;
   onSearchChange: (query: string) => void;
-  onSearchSubmit: (query: string) => void; // Enter'a basınca URL'i güncelleyecek fonksiyon
+  onSearchSubmit: (query: string) => void;
   onSortChange: (sort: string) => void;
   onClearAll: () => void;
 }
 
-export default function ProductFilter({
+// ODAK KAYBINI ÖNLEMEK İÇİN BİLEŞENİ DIŞARIYA ÇIKARDIK (STANDALONE SUB-COMPONENT)
+interface FilterContentProps {
+  categories: any[];
+  availableColors: ColorOption[];
+  selectedCategories: string[];
+  selectedColors: string[];
+  searchQuery: string;
+  sortOption: string;
+  suggestions: any[];
+  showSuggestions: boolean;
+  setShowSuggestions: (show: boolean) => void;
+  suggestionRef: React.RefObject<HTMLDivElement | null>;
+  onCategoryToggle: (catKey: string) => void;
+  onColorToggle: (colorCode: string) => void;
+  onSearchChange: (query: string) => void;
+  onSearchSubmit: (query: string) => void;
+  onSortChange: (sort: string) => void;
+}
+
+function FilterContent({
   categories,
   availableColors,
   selectedCategories,
   selectedColors,
   searchQuery,
   sortOption,
-  allProducts,
+  suggestions,
+  showSuggestions,
+  setShowSuggestions,
+  suggestionRef,
   onCategoryToggle,
   onColorToggle,
   onSearchChange,
   onSearchSubmit,
   onSortChange,
-  onClearAll,
-}: ProductFilterProps) {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionRef = useRef<HTMLDivElement>(null);
-
-  const activeFilterCount = selectedCategories.length + selectedColors.length + (searchQuery ? 1 : 0);
-
-  // Trendyol Tarzı Canlı Öneri Listesi Oluşturma (Yazılan harfe göre eşleşen ilk 5 ürün)
-  const suggestions = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (q.length < 1 || !allProducts) return [];
-    return allProducts
-      .filter((p) => String(p.title || "").toLowerCase().includes(q))
-      .slice(0, 5);
-  }, [searchQuery, allProducts]);
-
-  // Öneri kutusunun dışına tıklanınca kapanması için
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const FilterContent = () => (
+}: FilterContentProps) {
+  return (
     <div className="space-y-6 relative">
       
       {/* 1. TRENDYOL TARZI ARMA ÇUBUĞU VE ÖNERİLER */}
@@ -89,7 +84,7 @@ export default function ProductFilter({
               e.currentTarget.blur();
             }
           }}
-          placeholder="Ürünlerde ara..."
+          placeholder="Ürünlerde ara... (Enter'a bas)"
           className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5733]/20 focus:border-[#FF5733] transition-all"
         />
 
@@ -147,6 +142,7 @@ export default function ProductFilter({
             return (
               <button 
                 key={cat.key}
+                type="button"
                 onClick={() => onCategoryToggle(cat.key)}
                 className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center space-x-3 
                   ${isSelected ? 'bg-[#FF5733]/10 text-[#FF5733] font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -175,6 +171,7 @@ export default function ProductFilter({
             return (
               <button
                 key={color.id}
+                type="button"
                 onClick={() => onColorToggle(color.id)}
                 className={`relative w-8 h-8 rounded-full shadow-sm transition-transform focus:outline-none flex items-center justify-center
                   ${isSelected ? 'ring-2 ring-offset-2 ring-[#FF5733] scale-110' : 'border border-gray-200 hover:scale-110'}`}
@@ -191,6 +188,46 @@ export default function ProductFilter({
       </div>
     </div>
   );
+}
+
+export default function ProductFilter({
+  categories,
+  availableColors,
+  selectedCategories,
+  selectedColors,
+  searchQuery,
+  sortOption,
+  allProducts,
+  onCategoryToggle,
+  onColorToggle,
+  onSearchChange,
+  onSearchSubmit,
+  onSortChange,
+  onClearAll,
+}: ProductFilterProps) {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionRef = useRef<HTMLDivElement>(null);
+
+  const activeFilterCount = selectedCategories.length + selectedColors.length + (searchQuery ? 1 : 0);
+
+  const suggestions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length < 1 || !allProducts) return [];
+    return allProducts
+      .filter((p) => String(p.title || "").toLowerCase().includes(q))
+      .slice(0, 5);
+  }, [searchQuery, allProducts]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <>
@@ -202,10 +239,26 @@ export default function ProductFilter({
              <button onClick={onClearAll} className="text-sm text-[#FF5733] hover:underline font-medium">Temizle</button>
           )}
         </div>
-        <FilterContent />
+        <FilterContent 
+          categories={categories}
+          availableColors={availableColors}
+          selectedCategories={selectedCategories}
+          selectedColors={selectedColors}
+          searchQuery={searchQuery}
+          sortOption={sortOption}
+          suggestions={suggestions}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          suggestionRef={suggestionRef}
+          onCategoryToggle={onCategoryToggle}
+          onColorToggle={onColorToggle}
+          onSearchChange={onSearchChange}
+          onSearchSubmit={onSearchSubmit}
+          onSortChange={onSortChange}
+        />
       </div>
 
-      {/* MOBİL ALT BAR BAR (TRENDYOL STİLİ) */}
+      {/* MOBİL ALT BAR (TRENDYOL STİLİ) */}
       <div className="lg:hidden fixed bottom-6 inset-x-4 z-40 mx-auto max-w-sm">
         <div className="bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-100 flex items-center divide-x divide-gray-100 p-1">
           <div className="flex-1 relative">
@@ -248,7 +301,23 @@ export default function ProductFilter({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
-          <FilterContent />
+          <FilterContent 
+            categories={categories}
+            availableColors={availableColors}
+            selectedCategories={selectedCategories}
+            selectedColors={selectedColors}
+            searchQuery={searchQuery}
+            sortOption={sortOption}
+            suggestions={suggestions}
+            showSuggestions={showSuggestions}
+            setShowSuggestions={setShowSuggestions}
+            suggestionRef={suggestionRef}
+            onCategoryToggle={onCategoryToggle}
+            onColorToggle={onColorToggle}
+            onSearchChange={onSearchChange}
+            onSearchSubmit={onSearchSubmit}
+            onSortChange={onSortChange}
+          />
         </div>
         <div className="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-3">
            <button onClick={onClearAll} className="py-3 font-semibold text-gray-700 bg-gray-100 rounded-xl">Temizle</button>
