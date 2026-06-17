@@ -13,7 +13,7 @@ type Category = { key: string; label: string };
 
 const PAGE_SIZE = 20;
 
-// AKILLI RENK GRUPLAMA (ANA RENKLER)
+// AKILLI RENK GRUPLAMA
 const STANDARD_COLORS = [
   { id: 'black', label: 'Siyah', hex: '#111111' },
   { id: 'white', label: 'Beyaz', hex: '#FFFFFF' },
@@ -27,7 +27,6 @@ const STANDARD_COLORS = [
   { id: 'pink', label: 'Pembe', hex: '#FFC0CB' },
 ];
 
-// HEX Kodunu RGB'ye çevirip en yakın Ana Rengi bulur
 export function getClosestStandardColor(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return STANDARD_COLORS[0];
@@ -39,9 +38,7 @@ export function getClosestStandardColor(hex: string) {
   for (const std of STANDARD_COLORS) {
     const stdRgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(std.hex)!;
     const distance = Math.sqrt(
-      Math.pow(r - parseInt(stdRgb[1], 16), 2) + 
-      Math.pow(g - parseInt(stdRgb[2], 16), 2) + 
-      Math.pow(b - parseInt(stdRgb[3], 16), 2)
+      Math.pow(r - parseInt(stdRgb[1], 16), 2) + Math.pow(g - parseInt(stdRgb[2], 16), 2) + Math.pow(b - parseInt(stdRgb[3], 16), 2)
     );
     if (distance < minDistance) {
       minDistance = distance;
@@ -55,122 +52,177 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const pathname = usePathname();
   const sp = useSearchParams();
 
-  // URL'yi sessizce güncellemek için yardımcı fonksiyon
-  const updateUrl = (nextParams: URLSearchParams) => {
-    const queryString = nextParams.toString();
-    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
-    window.history.replaceState(null, '', newUrl);
+  // URL Güncelleme Yardımcısı
+  const updateUrl = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(sp?.toString() ?? "");
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value) next.delete(key);
+      else next.set(key, value);
+    });
+    window.history.replaceState(null, '', next.toString() ? `${pathname}?${next.toString()}` : pathname);
   };
 
-  // --- YEREL STATE'LER (ANINDA TEPKİ İÇİN) ---
-  const [activeCategory, setActiveCategory] = useState<string>(sp?.get("category") || "all");
+  // --- MERKEZİ DEVLETLER (STATE) ---
+  const [searchQuery, setSearchQuery] = useState(sp?.get("q") || "");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(sp?.get("cats") ? sp!.get("cats")!.split(",") : []);
   const [selectedColors, setSelectedColors] = useState<string[]>(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
+  const [sortOption, setSortOption] = useState(sp?.get("sort") || "newest");
   const [page, setPage] = useState<number>(Number(sp?.get("page") ?? "1"));
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
 
-  // Tarayıcı geri/ileri tuşlarına basıldığında state'i URL ile senkronize et
+  // Tarayıcı Geri/İleri Senkronizasyonu
   useEffect(() => {
-    setActiveCategory(sp?.get("category") || "all");
+    setSearchQuery(sp?.get("q") || "");
+    setSelectedCategories(sp?.get("cats") ? sp!.get("cats")!.split(",") : []);
     setSelectedColors(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
+    setSortOption(sp?.get("sort") || "newest");
     setPage(Number(sp?.get("page") ?? "1"));
   }, [sp]);
 
-  // Müşterinin ürünlerinden Ana Renkleri çıkart
+  // Renk Filtresi İçin Ürünlerden Renkleri Çıkar
   const availableColors = useMemo(() => {
     const usedStandardColorIds = new Set<string>();
     products.forEach((p) => {
       if (p.variants && Array.isArray(p.variants)) {
         p.variants.forEach((v: any) => {
-          if (v.ColorCode) {
-            const standardColor = getClosestStandardColor(v.ColorCode);
-            usedStandardColorIds.add(standardColor.id);
-          }
+          if (v.ColorCode) usedStandardColorIds.add(getClosestStandardColor(v.ColorCode).id);
         });
       }
     });
     return STANDARD_COLORS.filter(color => usedStandardColorIds.has(color.id));
   }, [products]);
 
-  // Filtreleme Mantığı
+  // --- ANA FİLTRELEME VE SIRALAMA ALGORİTMASI ---
   const filteredAll = useMemo(() => {
     let result = products;
 
-    if (activeCategory !== "all") {
-      result = result.filter((p) => p.category === activeCategory);
+    // 1. Arama Çubuğu
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
     }
 
+    // 2. Çoklu Kategori
+    if (selectedCategories.length > 0) {
+      result = result.filter((p) => selectedCategories.includes(p.category));
+    }
+
+    // 3. Renkler (ÖZEL KURAL: Renksiz ürünler her zaman gösterilir)
     if (selectedColors.length > 0) {
       result = result.filter((p) => {
-        if (!p.variants || !Array.isArray(p.variants)) return false;
+        const hasNoColors = !p.variants || !Array.isArray(p.variants) || p.variants.length === 0;
+        if (hasNoColors) return true; // Kullanıcı kuralı: Renksizleri geçiş izni ver!
+        
         return p.variants.some((v: any) => {
-          const stdColor = getClosestStandardColor(v.ColorCode);
-          return selectedColors.includes(stdColor.id);
+          if (!v.ColorCode) return false;
+          return selectedColors.includes(getClosestStandardColor(v.ColorCode).id);
         });
       });
     }
 
-    // Tarihe göre sırala
-    return [...result].sort((a, b) => new Date(b.createdAtISO || 0).getTime() - new Date(a.createdAtISO || 0).getTime());
-  }, [activeCategory, selectedColors, products]);
+    // 4. Sıralama Algoritması
+    return [...result].sort((a, b) => {
+      // Değerleri güvenli bir şekilde sayıya çevirme
+      const priceA = Number(a.wholesalePrice) || 0;
+      const priceB = Number(b.wholesalePrice) || 0;
+      const minQtyA = parseInt(a.minQty || a.minQtyText) || 1;
+      const minQtyB = parseInt(b.minQty || b.minQtyText) || 1;
+      const dateA = new Date(a.createdAtISO || 0).getTime();
+      const dateB = new Date(b.createdAtISO || 0).getTime();
+
+      switch (sortOption) {
+        case "price_asc": return priceA - priceB;
+        case "price_desc": return priceB - priceA;
+        case "minqty_asc": return minQtyA - minQtyB;
+        case "minqty_desc": return minQtyB - minQtyA;
+        default: return dateB - dateA; // newest
+      }
+    });
+  }, [searchQuery, selectedCategories, selectedColors, sortOption, products]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAll.length / PAGE_SIZE));
   const paged = filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // --- IŞIK HIZINDA FİLTRELEME AKSİYONLARI ---
-
+  // --- AKSİYONLAR ---
   function changePage(nextPage: number) {
-    setPage(nextPage); // Anında ekranı değiştir
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    next.set("page", String(nextPage));
-    updateUrl(next); // URL'yi arka planda sessizce güncelle
+    setPage(nextPage);
+    updateUrl({ page: String(nextPage) });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleCategoryChange(catKey: string) {
-    setActiveCategory(catKey); // Anında ekranı değiştir
+  function handleSearchChange(query: string) {
+    setSearchQuery(query);
     setPage(1);
-    
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    if (catKey === "all") next.delete("category");
-    else next.set("category", catKey);
-    next.delete("page");
-    updateUrl(next);
+    updateUrl({ q: query || null, page: null });
+  }
+
+  function handleSortChange(sort: string) {
+    setSortOption(sort);
+    setPage(1);
+    updateUrl({ sort: sort === "newest" ? null : sort, page: null });
+  }
+
+  function handleCategoryToggle(catKey: string) {
+    let updated = [...selectedCategories];
+    if (updated.includes(catKey)) updated = updated.filter(c => c !== catKey);
+    else updated.push(catKey);
+
+    setSelectedCategories(updated);
+    setPage(1);
+    updateUrl({ cats: updated.length > 0 ? updated.join(",") : null, page: null });
   }
 
   function handleColorToggle(colorId: string) {
-    // 1. Array'i anında güncelle
-    let updatedColors = [...selectedColors];
-    if (updatedColors.includes(colorId)) updatedColors = updatedColors.filter(c => c !== colorId);
-    else updatedColors.push(colorId);
+    let updated = [...selectedColors];
+    if (updated.includes(colorId)) updated = updated.filter(c => c !== colorId);
+    else updated.push(colorId);
 
-    setSelectedColors(updatedColors); // Anında ekranı değiştir
+    setSelectedColors(updated);
     setPage(1);
+    updateUrl({ colors: updated.length > 0 ? updated.join(",") : null, page: null });
+  }
 
-    // 2. URL'yi arka planda ayarla
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    if (updatedColors.length > 0) next.set("colors", updatedColors.join(","));
-    else next.delete("colors");
-    next.delete("page");
-    updateUrl(next);
+  function clearAllFilters() {
+    setSearchQuery("");
+    setSelectedCategories([]);
+    setSelectedColors([]);
+    setSortOption("newest");
+    setPage(1);
+    updateUrl({ q: null, cats: null, colors: null, sort: null, page: null });
   }
 
   return (
-    <div className="container mx-auto px-4 mt-6 max-w-[1400px]">
+    <div className="container mx-auto px-4 mt-4 max-w-[1400px]">
       <div className="flex flex-col lg:flex-row relative gap-4 lg:gap-8">
         
         <ProductFilter 
           categories={categories} 
           availableColors={availableColors}
-          selectedCategory={activeCategory}
+          selectedCategories={selectedCategories}
           selectedColors={selectedColors}
-          onCategoryChange={handleCategoryChange}
+          searchQuery={searchQuery}
+          sortOption={sortOption}
+          onCategoryToggle={handleCategoryToggle}
           onColorToggle={handleColorToggle}
-          isLoading={false} // Yükleme animasyonunu tamamen kapattık
+          onSearchChange={handleSearchChange}
+          onSortChange={handleSortChange}
+          onClearAll={clearAllFilters}
         />
         
-        <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh] relative">
+        <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh] relative pt-2 lg:pt-0">
+          
+          {/* Mobil Cihazlarda "X ürün bulundu" Bilgisi */}
+          <div className="lg:hidden mb-4 text-sm text-gray-500 font-medium px-1">
+            {filteredAll.length} ürün listeleniyor
+          </div>
+
           {filteredAll.length === 0 ? (
-             <div className="flex items-center justify-center h-64 text-gray-500 font-medium text-lg">Bu filtrelere uygun ürün bulunamadı.</div>
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <p className="text-gray-500 font-medium text-lg mb-4">Aradığınız kriterlere uygun ürün bulunamadı.</p>
+              <button onClick={clearAllFilters} className="px-6 py-2 bg-[#FF5733] text-white rounded-full font-medium hover:bg-[#e64a2e] transition-colors">
+                Filtreleri Temizle
+              </button>
+            </div>
           ) : (
             <ProductGrid
               products={paged}
@@ -181,7 +233,7 @@ export default function ProductsClient({ products, categories }: { products: Pro
             />
           )}
 
-          <div className="mt-12 mb-24 lg:mb-8 flex justify-center">
+          <div className="mt-12 mb-28 lg:mb-8 flex justify-center">
             <CatalogPagination page={page} pageCount={pageCount} onChange={changePage} />
           </div>
         </div>
