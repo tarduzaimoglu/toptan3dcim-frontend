@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import CatalogPagination from "@/components/products/CatalogPagination";
@@ -13,158 +13,140 @@ type Category = { key: string; label: string };
 
 const PAGE_SIZE = 20;
 
-function smartSort(items: Product[]) {
-  return [...items].sort((a, b) => {
-    const af = a.featured ? 1 : 0;
-    const bf = b.featured ? 1 : 0;
-    if (bf !== af) return bf - af;
-    return (
-      new Date(b.createdAtISO || 0).getTime() -
-      new Date(a.createdAtISO || 0).getTime()
+// AKILLI RENK GRUPLAMA (ANA RENKLER)
+const STANDARD_COLORS = [
+  { id: 'black', label: 'Siyah', hex: '#111111' },
+  { id: 'white', label: 'Beyaz', hex: '#FFFFFF' },
+  { id: 'grey', label: 'Gri', hex: '#808080' },
+  { id: 'red', label: 'Kırmızı', hex: '#FF0000' },
+  { id: 'blue', label: 'Mavi', hex: '#0000FF' },
+  { id: 'green', label: 'Yeşil', hex: '#008000' },
+  { id: 'yellow', label: 'Sarı', hex: '#FFFF00' },
+  { id: 'orange', label: 'Turuncu', hex: '#FFA500' },
+  { id: 'purple', label: 'Mor', hex: '#800080' },
+  { id: 'pink', label: 'Pembe', hex: '#FFC0CB' },
+];
+
+// HEX Kodunu RGB'ye çevirip en yakın Ana Rengi bulur
+export function getClosestStandardColor(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return STANDARD_COLORS[0];
+  const r = parseInt(result[1], 16), g = parseInt(result[2], 16), b = parseInt(result[3], 16);
+  
+  let minDistance = Infinity;
+  let closest = STANDARD_COLORS[0];
+
+  for (const std of STANDARD_COLORS) {
+    const stdRgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(std.hex)!;
+    const distance = Math.sqrt(
+      Math.pow(r - parseInt(stdRgb[1], 16), 2) + 
+      Math.pow(g - parseInt(stdRgb[2], 16), 2) + 
+      Math.pow(b - parseInt(stdRgb[3], 16), 2)
     );
-  });
+    if (distance < minDistance) {
+      minDistance = distance;
+      closest = std;
+    }
+  }
+  return closest;
 }
 
-export default function ProductsClient({
-  defaultCat = "featured",
-  products,
-  categories,
-}: {
-  defaultCat?: string;
-  products: Product[];
-  categories: Category[];
-}) {
+export default function ProductsClient({ products, categories }: { products: Product[]; categories: Category[]; }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  
+  // YÜKLENİYOR DURUMU İÇİN (Performans İyileştirmesi)
+  const [isPending, startTransition] = useTransition();
 
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
 
-  // --- URL'den Filtre Parametrelerini Oku ---
-  const activeCategory = sp?.get("category") || defaultCat;
-  
-  // URL'de renkler virgülle ayrılmış olabilir: ?colors=#E31B12,#000000
+  // URL'den Filtre Parametrelerini Oku
+  const activeCategory = sp?.get("category") || "all";
   const colorsParam = sp?.get("colors");
-  const selectedColors = useMemo(() => {
-    return colorsParam ? colorsParam.split(",") : [];
-  }, [colorsParam]);
-
-  const pageFromUrl = useMemo(() => {
-    const raw = sp?.get("page") ?? "1";
-    const n = Number(raw);
-    return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
-  }, [sp]);
-
+  const selectedColors = useMemo(() => colorsParam ? colorsParam.split(",") : [], [colorsParam]);
+  const pageFromUrl = useMemo(() => Number(sp?.get("page") ?? "1"), [sp]);
   const [page, setPage] = useState<number>(pageFromUrl);
 
-  useEffect(() => {
-    setPage(pageFromUrl);
-  }, [pageFromUrl]);
-
-  // --- STRAPI'DEN BENZERSİZ RENKLERİ ÇIKART ---
+  // Müşterinin ürünlerinden Ana Renkleri çıkart
   const availableColors = useMemo(() => {
-    const colorMap = new Map<string, string>(); // HEX -> İsim eşleşmesi
-
+    const usedStandardColorIds = new Set<string>();
     products.forEach((p) => {
-      // Strapi yapısındaki p.variants kontrolü
       if (p.variants && Array.isArray(p.variants)) {
         p.variants.forEach((v: any) => {
-          if (v.ColorCode && v.ColorName) {
-            colorMap.set(v.ColorCode, v.ColorName);
+          if (v.ColorCode) {
+            const standardColor = getClosestStandardColor(v.ColorCode);
+            usedStandardColorIds.add(standardColor.id);
           }
         });
       }
     });
-
-    // Map'i [{ code: '#E31B12', name: 'Kırmızı' }, ...] formatına çevir
-    return Array.from(colorMap.entries()).map(([code, name]) => ({ code, name }));
+    return STANDARD_COLORS.filter(color => usedStandardColorIds.has(color.id));
   }, [products]);
 
-  // --- FİLTRELEME MANTIĞI ---
+  // Filtreleme Mantığı
   const filteredAll = useMemo(() => {
     let result = products;
 
-    // 1. Kategori Filtresi
-    if (activeCategory && activeCategory !== "featured") {
-      // Not: Strapi'deki kategori alanınız p.category (string) veya p.category_product?.slug (object) olabilir.
-      // Mevcut kodunuzda `p.category === active` olduğu için bunu koruduk. Gerekirse p.category_product.slug yapabilirsiniz.
+    if (activeCategory !== "all") {
       result = result.filter((p) => p.category === activeCategory);
     }
 
-    // 2. Renk Filtresi
     if (selectedColors.length > 0) {
       result = result.filter((p) => {
         if (!p.variants || !Array.isArray(p.variants)) return false;
-        // Seçili renklerden en az biri, bu ürünün varyantları içinde var mı?
-        return p.variants.some((v: any) => selectedColors.includes(v.ColorCode));
+        return p.variants.some((v: any) => {
+          const stdColor = getClosestStandardColor(v.ColorCode);
+          return selectedColors.includes(stdColor.id);
+        });
       });
     }
 
-    return smartSort(result);
+    // Tarihe göre sırala
+    return [...result].sort((a, b) => new Date(b.createdAtISO || 0).getTime() - new Date(a.createdAtISO || 0).getTime());
   }, [activeCategory, selectedColors, products]);
 
-  const pageCount = useMemo(() => {
-    return Math.max(1, Math.ceil(filteredAll.length / PAGE_SIZE));
-  }, [filteredAll.length]);
+  const pageCount = Math.max(1, Math.ceil(filteredAll.length / PAGE_SIZE));
+  const paged = filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useEffect(() => {
-    if (page > pageCount) changePage(pageCount);
-  }, [pageCount]);
-
-  const paged = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredAll.slice(start, start + PAGE_SIZE);
-  }, [filteredAll, page]);
-
-  const getQtyText = (id: any) => qtyById[String(id)] ?? String(CART_MIN_QTY);
-  const setQtyText = (id: any, v: string) => setQtyById((prev) => ({ ...prev, [String(id)]: v }));
-
-  // --- FİLTRE AKSİYONLARI ---
   function changePage(nextPage: number) {
-    const safe = Math.min(Math.max(1, nextPage), pageCount);
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    if (safe <= 1) next.delete("page");
-    else next.set("page", String(safe));
-    router.push(`${pathname}?${next.toString()}`, { scroll: true });
-    setPage(safe);
+    startTransition(() => {
+      const next = new URLSearchParams(sp?.toString() ?? "");
+      next.set("page", String(nextPage));
+      router.push(`${pathname}?${next.toString()}`, { scroll: true });
+    });
   }
 
   function handleCategoryChange(catKey: string) {
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    if (catKey === "featured") {
-      next.delete("category");
-    } else {
-      next.set("category", catKey);
-    }
-    next.delete("page"); // Filtre değişince 1. sayfaya dön
-    router.push(`${pathname}?${next.toString()}`, { scroll: true });
+    startTransition(() => {
+      const next = new URLSearchParams(sp?.toString() ?? "");
+      if (catKey === "all") next.delete("category");
+      else next.set("category", catKey);
+      next.delete("page");
+      router.push(`${pathname}?${next.toString()}`, { scroll: true });
+    });
   }
 
-  function handleColorToggle(colorCode: string) {
-    const next = new URLSearchParams(sp?.toString() ?? "");
-    let updatedColors = [...selectedColors];
+  function handleColorToggle(colorId: string) {
+    startTransition(() => {
+      const next = new URLSearchParams(sp?.toString() ?? "");
+      let updatedColors = [...selectedColors];
+      if (updatedColors.includes(colorId)) updatedColors = updatedColors.filter(c => c !== colorId);
+      else updatedColors.push(colorId);
 
-    if (updatedColors.includes(colorCode)) {
-      updatedColors = updatedColors.filter(c => c !== colorCode); // Varsa çıkar
-    } else {
-      updatedColors.push(colorCode); // Yoksa ekle
-    }
-
-    if (updatedColors.length > 0) {
-      next.set("colors", updatedColors.join(","));
-    } else {
-      next.delete("colors");
-    }
-
-    next.delete("page"); // Filtre değişince 1. sayfaya dön
-    router.push(`${pathname}?${next.toString()}`, { scroll: true });
+      if (updatedColors.length > 0) next.set("colors", updatedColors.join(","));
+      else next.delete("colors");
+      
+      next.delete("page");
+      router.push(`${pathname}?${next.toString()}`, { scroll: true });
+    });
   }
 
   return (
     <div className="container mx-auto px-4 mt-6 max-w-[1400px]">
       <div className="flex flex-col lg:flex-row relative gap-4 lg:gap-8">
         
-        {/* SOL PANEL: FİLTRELER */}
+        {/* Filtreye isPending gönderiyoruz */}
         <ProductFilter 
           categories={categories} 
           availableColors={availableColors}
@@ -172,39 +154,37 @@ export default function ProductsClient({
           selectedColors={selectedColors}
           onCategoryChange={handleCategoryChange}
           onColorToggle={handleColorToggle}
+          isLoading={isPending}
         />
         
-        {/* SAĞ PANEL: ÜRÜNLER */}
-        <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh]">
-          {filteredAll.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-              <p className="text-lg">Bu filtrelere uygun ürün bulunamadı.</p>
-              <button 
-                onClick={() => router.push(pathname)} 
-                className="mt-4 text-[#FF5733] hover:underline"
-              >
-                Filtreleri Temizle
-              </button>
+        <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh] relative">
+          
+          {/* YÜKLENİYOR OVERLAY EFEKTİ */}
+          {isPending && (
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-start justify-center pt-20">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FF5733]"></div>
             </div>
+          )}
+
+          {filteredAll.length === 0 ? (
+             <div className="flex items-center justify-center h-64 text-gray-500">Bu filtrelere uygun ürün bulunamadı.</div>
           ) : (
+            // Seçili rengi ProductGrid'e gönderiyoruz (Görsel değişimi için)
             <ProductGrid
               products={paged}
+              selectedColors={selectedColors} // YENİ EKLENDİ
               qtyTextById={qtyById}
-              getQtyText={getQtyText}
-              onQtyTextChange={setQtyText}
+              getQtyText={(id: any) => qtyById[String(id)] ?? String(CART_MIN_QTY)}
+              onQtyTextChange={(id: any, v: string) => setQtyById((prev) => ({ ...prev, [String(id)]: v }))}
             />
           )}
 
           <div className="mt-12 mb-24 lg:mb-8 flex justify-center">
-            <CatalogPagination
-              page={page}
-              pageCount={pageCount}
-              onChange={changePage}
-            />
+            <CatalogPagination page={page} pageCount={pageCount} onChange={changePage} />
           </div>
         </div>
       </div>
       <CartFab />
     </div>
   );
-}
+}v
