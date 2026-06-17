@@ -8,6 +8,9 @@ import CatalogPagination from "@/components/products/CatalogPagination";
 import { CartFab } from "@/components/cart/CartIndicator";
 import { CART_MIN_QTY } from "@/components/cart/CartContext";
 
+// Yeni eklediğimiz Filtre bileşenini import ediyoruz
+import ProductFilter from "@/components/products/ProductFilter";
+
 type Product = any;
 type Category = { key: string; label: string };
 
@@ -93,32 +96,45 @@ export default function ProductsClient({
   }
 
   return (
-    <>
-      {/* Fazladan genişlik sınırlamalarını kaldırıp akışı serbest bıraktık */}
+    <div className="container mx-auto px-4 max-w-[1400px]">
+      
+      {/* Mevcut Kategori Sekmeleri */}
       <CategoryTabs
         categories={categories}
         active={active}
         onChange={changeCategory}
       />
 
-      <div className="mt-4"> {/* mt-6'dan mt-4'e düşürerek gridi yaklaştırdık */}
-        <ProductGrid
-          products={paged}
-          qtyTextById={qtyById}
-          getQtyText={getQtyText}
-          onQtyTextChange={setQtyText}
-        />
-      </div>
+      {/* YENİ ANA İSKELET: Sol taraf filtre, Sağ taraf Ürün Grid'i */}
+      <div className="flex flex-col lg:flex-row mt-6 relative gap-4 lg:gap-8">
+        
+        {/* Sol Taraf: Sticky Filtre Bileşeni */}
+        <ProductFilter />
+        
+        {/* Sağ Taraf: Ürünler ve Sayfalandırma */}
+        <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh]">
+          
+          <ProductGrid
+            products={paged}
+            qtyTextById={qtyById}
+            getQtyText={getQtyText}
+            onQtyTextChange={setQtyText}
+          />
 
-      <div className="mt-12 flex justify-center">
-        <CatalogPagination
-          page={page}
-          pageCount={pageCount}
-          onChange={changePage}
-        />
+          {/* Sayfalandırma - Mobil görünümde sabit filtrenin altında kalmaması için mb-24 eklendi */}
+          <div className="mt-12 mb-24 lg:mb-8 flex justify-center">
+            <CatalogPagination
+              page={page}
+              pageCount={pageCount}
+              onChange={changePage}
+            />
+          </div>
+
+        </div>
+
       </div>
 
       <CartFab />
-    </>
+    </div>
   );
 }
