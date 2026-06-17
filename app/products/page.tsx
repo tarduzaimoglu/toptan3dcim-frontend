@@ -5,12 +5,11 @@ import ProductsClient from "./ProductsClient";
 import { getCatalogProducts, getCatalogCategories } from "@/lib/strapi";
 
 export default async function ProductsPage() {
-  const [products, cats] = await Promise.all([
+  // Strapi'den ürünleri ve kategorileri eş zamanlı çekiyoruz
+  const [products, categories] = await Promise.all([
     getCatalogProducts(),
     getCatalogCategories(),
   ]);
-
-  const categories = [{ key: "featured", label: "Öne Çıkanlar" }, ...cats];
 
   return (
     <main className="min-h-screen bg-white">
@@ -19,7 +18,6 @@ export default async function ProductsPage() {
         <ProductsClient
           products={products}
           categories={categories}
-          defaultCat="featured"
         />
       </div>
     </main>
