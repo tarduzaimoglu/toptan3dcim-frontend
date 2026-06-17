@@ -147,3 +147,8 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
           <div className="mt-3 text-[12px] font-medium text-[#ff7a00] opacity-90 transition-all group-hover:opacity-100 group-hover:text-[#e66e00]">
             Detayları görüntüle →
           </div>
+        </div>
+      </div>
+    </button>
+  );
+}
