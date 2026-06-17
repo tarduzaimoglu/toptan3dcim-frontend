@@ -5,8 +5,44 @@ import Image from "next/image";
 import type { Product } from "@/lib/products/types";
 import { CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/CartContext";
 
-// Eski Supabase karmaşasını temizledik. Sadece temiz URL'i alıyoruz.
-// Next.js <Image> bileşeni bunu otomatik olarak WebP yapıp optimize edecek!
+// --- RENK EŞLEŞTİRME YARDIMCILARI ---
+const STANDARD_COLORS = [
+  { id: 'black', hex: '#111111' },
+  { id: 'white', hex: '#FFFFFF' },
+  { id: 'grey', hex: '#808080' },
+  { id: 'red', hex: '#FF0000' },
+  { id: 'blue', hex: '#0000FF' },
+  { id: 'green', hex: '#008000' },
+  { id: 'yellow', hex: '#FFFF00' },
+  { id: 'orange', hex: '#FFA500' },
+  { id: 'purple', hex: '#800080' },
+  { id: 'pink', hex: '#FFC0CB' },
+];
+
+function getClosestStandardColorId(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return 'black';
+  const r = parseInt(result[1], 16), g = parseInt(result[2], 16), b = parseInt(result[3], 16);
+  
+  let minDistance = Infinity;
+  let closestId = 'black';
+
+  for (const std of STANDARD_COLORS) {
+    const stdRgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(std.hex)!;
+    const distance = Math.sqrt(
+      Math.pow(r - parseInt(stdRgb[1], 16), 2) + 
+      Math.pow(g - parseInt(stdRgb[2], 16), 2) + 
+      Math.pow(b - parseInt(stdRgb[3], 16), 2)
+    );
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestId = std.id;
+    }
+  }
+  return closestId;
+}
+
+// Orijinal görsel bulucu
 function resolveThumbSrc(product: any) {
   const raw =
     (typeof product?.imageUrl === "string" && product.imageUrl.trim() && product.imageUrl) ||
@@ -21,10 +57,32 @@ type Props = {
   isOpen?: boolean;
   qtyText?: string;
   setQtyText?: (v: string) => void;
+  selectedColors?: string[]; // YENİ: Filtreden gelen seçili renkler
 };
 
-export function ProductCard({ product, onOpen, isOpen }: Props) {
-  const imgSrc = resolveThumbSrc(product as any);
+export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Props) {
+  
+  // YENİ: Eğer filtreden renk seçildiyse ve üründe o renk varsa görseli değiştir
+  const displayImageSrc = useMemo(() => {
+    const prodAny = product as any;
+
+    if (selectedColors.length > 0 && prodAny.variants && Array.isArray(prodAny.variants)) {
+      // Ürünün varyantları içinde, seçili renklere uyan ilk varyantı bul
+      const matchingVariant = prodAny.variants.find((v: any) => {
+        if (!v.ColorCode || !v.VariantImage?.url) return false;
+        const stdColorId = getClosestStandardColorId(v.ColorCode);
+        return selectedColors.includes(stdColorId);
+      });
+
+      // Eşleşen varyantın görseli varsa onu döndür
+      if (matchingVariant) {
+        return matchingVariant.VariantImage.url;
+      }
+    }
+    
+    // Eşleşme yoksa veya renk seçilmediyse standart görseli döndür
+    return resolveThumbSrc(prodAny);
+  }, [product, selectedColors]);
 
   const unitPrice = useMemo(() => {
     const p = (product as any).wholesalePrice;
@@ -55,19 +113,13 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
         isOpen ? "border-[#7C3AED] ring-2 ring-[#7C3AED]/20" : "border-slate-200",
       ].join(" ")}
     >
-      {/* YENİ: aspect-[3/4] yaparak 3000x4000px görsellerinin 
-        tam olarak buraya oturmasını sağladık. Kenarlarda boşluk kalmayacak.
-      */}
-      {/* Görsel Alanı */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-white border-b border-slate-100">
         <Image
-          src={imgSrc}
+          src={displayImageSrc}
           alt={product.title}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-          // p-2 silindi, görsel artık köşelere tam oturacak. 
-          // object-contain korundu ki yatay resimler kırpılmasın.
-          className="object-contain" 
+          className="object-contain transition-opacity duration-300" 
         />
 
         {tag ? (
@@ -95,8 +147,3 @@ export function ProductCard({ product, onOpen, isOpen }: Props) {
           <div className="mt-3 text-[12px] font-medium text-[#ff7a00] opacity-90 transition-all group-hover:opacity-100 group-hover:text-[#e66e00]">
             Detayları görüntüle →
           </div>
-        </div>
-      </div>
-    </button>
-  );
-}
