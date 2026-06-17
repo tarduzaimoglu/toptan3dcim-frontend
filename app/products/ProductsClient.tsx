@@ -172,3 +172,21 @@ export default function ProductsClient({ products, categories }: { products: Pro
           {filteredAll.length === 0 ? (
              <div className="flex items-center justify-center h-64 text-gray-500 font-medium text-lg">Bu filtrelere uygun ürün bulunamadı.</div>
           ) : (
+            <ProductGrid
+              products={paged}
+              selectedColors={selectedColors}
+              qtyTextById={qtyById}
+              getQtyText={(id: any) => qtyById[String(id)] ?? String(CART_MIN_QTY)}
+              onQtyTextChange={(id: any, v: string) => setQtyById((prev) => ({ ...prev, [String(id)]: v }))}
+            />
+          )}
+
+          <div className="mt-12 mb-24 lg:mb-8 flex justify-center">
+            <CatalogPagination page={page} pageCount={pageCount} onChange={changePage} />
+          </div>
+        </div>
+      </div>
+      <CartFab />
+    </div>
+  );
+}
