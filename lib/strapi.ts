@@ -45,7 +45,6 @@ export async function strapiFetch<T>(path: string, init?: RequestInit & { revali
   const revalidateVal = init?.revalidate ?? CACHE_REVALIDATE;
   const { next, ...restInit } = init || {};
 
-  // GÜNCELLEME: Eğer revalidate 0 ise Next.js'e veriyi asla önbelleğe almamasını söylüyoruz (Zorunlu taze veri)
   const res = await fetch(url, {
     ...restInit,
     headers,
@@ -144,7 +143,6 @@ function normalizeStringArray(input: any): string[] {
 
 export async function getCatalogCategories(): Promise<{ key: string; label: string }[]> {
   const path = "/api/category-products?sort=order:asc&filters[isActive][$eq]=true&fields[0]=slug&fields[1]=title";
-  // GÜNCELLEME: revalidate değerini 0 yaptık, kategoriler anlık güncellenir
   const res = await strapiFetch<any>(path, { revalidate: 0 }); 
   const items = unwrapCollection(res);
   return items.map((x: AnyObj) => ({
@@ -154,8 +152,14 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 }
 
 export async function getCatalogProducts(): Promise<any[]> {
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
-  // GÜNCELLEME: revalidate değerini 0 yaptık, yeni yüklenen ürünler ANINDA listelenir
+  // GÜNCELLEME: bullets ve specs alanları sorguda zorla populate listesine eklendi
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true" +
+               "&populate[0]=image" +
+               "&populate[1]=category_product" +
+               "&populate[2]=variants.VariantImage" +
+               "&populate[3]=bullets" +
+               "&populate[4]=specs";
+               
   const res = await strapiFetch<any>(path, { revalidate: 0 }); 
   const items = unwrapCollection(res);
   return items.map((x: AnyObj) => {
@@ -169,20 +173,22 @@ export async function getCatalogProducts(): Promise<any[]> {
           VariantImage: { url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" } 
         })).filter((v: any) => v.ColorName !== "")
       : [];
+      
     return {
       id: String(x?.id ?? x?.documentId ?? ""),
-      title: x?.title || "",
+      title: x?.title || x?.Title || "",
       category: String(cat?.slug ?? ""),
       featured: !!x?.featured,
       imageUrls,
       imageUrl: imageUrls[0] || "",
       image: imageUrls[0] || "", 
-      wholesalePrice: x?.wholesalePrice,
-      minQty: x?.minQty,
-      bullets: normalizeStringArray(x?.bullets),
-      specs: normalizeStringArray(x?.specs),
+      wholesalePrice: x?.wholesalePrice ?? x?.WholesalePrice ?? x?.wholesale_price,
+      // GÜNCELLEME: minQty için veritabanı harf/alt çizgi varyasyonlarına karşı koruma eklendi
+      minQty: x?.minQty ?? x?.MinQty ?? x?.min_qty ?? 1,
+      bullets: normalizeStringArray(x?.bullets ?? x?.Bullets),
+      specs: normalizeStringArray(x?.specs ?? x?.Specs),
       variants: mappedVariants,
-      description: x?.description || ""
+      description: x?.description || x?.Description || ""
     };
   });
 }
