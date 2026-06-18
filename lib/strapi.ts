@@ -4,6 +4,9 @@ export const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL?.replace(/\/$/, "")
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || "";
 const CACHE_REVALIDATE = 3600;
 
+// ✅ YENİ: Sayfa geçişlerinin 0ms kalması ve Strapi verilerinin taze akması için ideal süre (10 saniye)
+const FAST_REVALIDATE = 10; 
+
 function unwrapEntity(entity: any) {
   if (entity && typeof entity === "object" && "attributes" in entity) {
     return { id: entity.id, ...entity.attributes };
@@ -113,21 +116,39 @@ export async function getCategories(): Promise<StrapiCategory[]> {
 
 export type StrapiCategory = { id: number; title: string; slug: string; description?: string; };
 
+// ✅ DÜZELTME: Strapi v4/v5 Blocks (Zengin Metin) editör yapısını satır satır çözen kurşungeçirmez normalizasyon
 function normalizeStringArray(input: any): string[] {
   if (!input) return [];
   let data = input;
   if (typeof data === "string") { try { data = JSON.parse(data); } catch { } }
+  
   if (Array.isArray(data) && data.some(item => item && typeof item === "object")) {
-    let extractedText = "";
-    const extractRecursively = (node: any) => {
-      if (!node) return;
-      if (typeof node === "string") { extractedText += node + "\n"; return; }
-      if (node.type === "text" && node.text) { extractedText += node.text + "\n"; return; }
-      if (Array.isArray(node.children)) { node.children.forEach(extractRecursively); }
-    };
-    data.forEach(extractRecursively);
-    data = extractedText;
+    const lines: string[] = [];
+    data.forEach((block: any) => {
+      if (!block) return;
+      
+      // Strapi içerisindeki noktalı/numaralı liste blokları için koruma
+      if ((block.type === "list" || block.type === "ordered-list") && Array.isArray(block.children)) {
+        block.children.forEach((listItem: any) => {
+          if (listItem && Array.isArray(listItem.children)) {
+            const text = listItem.children.map((c: any) => c.text || "").join("").trim();
+            if (text) lines.push(text);
+          }
+        });
+        return;
+      }
+      
+      // Standart paragraf ve text node blokları (Kalın/italik formatları birleştirir)
+      if (Array.isArray(block.children)) {
+        const text = block.children.map((c: any) => c.text || "").join("").trim();
+        if (text) lines.push(text);
+      } else if (typeof block.text === "string" && block.text.trim()) {
+        lines.push(block.text.trim());
+      }
+    });
+    if (lines.length > 0) return lines;
   }
+  
   if (typeof data === "string") {
     if (data.includes("<li>")) {
       const matches = data.match(/<li>(.*?)<\/li>/gi);
@@ -143,7 +164,8 @@ function normalizeStringArray(input: any): string[] {
 
 export async function getCatalogCategories(): Promise<{ key: string; label: string }[]> {
   const path = "/api/category-products?sort=order:asc&filters[isActive][$eq]=true&fields[0]=slug&fields[1]=title";
-  const res = await strapiFetch<any>(path, { revalidate: 0 }); 
+  // ✅ GÜNCELLEME: Işık hızında geçişler için FAST_REVALIDATE (10s) yapıldı
+  const res = await strapiFetch<any>(path, { revalidate: FAST_REVALIDATE }); 
   const items = unwrapCollection(res);
   return items.map((x: AnyObj) => ({
     key: String(x?.slug ?? x?.id ?? ""),
@@ -153,13 +175,13 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 
 export async function getCatalogProducts(): Promise<any[]> {
   try {
-    // 🛠️ DÜZELTME: Hatalı bullets ve specs populateleri kaldırıldı, orijinal çalışan pathe geri dönüldü.
     const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true" +
                  "&populate[0]=image" +
                  "&populate[1]=category_product" +
                  "&populate[2]=variants.VariantImage";
                  
-    const res = await strapiFetch<any>(path, { revalidate: 0 }); 
+    // ✅ GÜNCELLEME: Işık hızında geçişler için FAST_REVALIDATE (10s) yapıldı
+    const res = await strapiFetch<any>(path, { revalidate: FAST_REVALIDATE }); 
     const items = unwrapCollection(res);
     
     return items.map((x: AnyObj) => {
@@ -191,7 +213,6 @@ export async function getCatalogProducts(): Promise<any[]> {
       };
     });
   } catch (error) {
-    // 🛠️ GÜVENLİK ÖNLEMİ: Eğer API'de beklenmeyen bir durum olursa sayfa çökmesin, boş liste dönsün
     console.error("getCatalogProducts runtime hatası:", error);
     return [];
   }
