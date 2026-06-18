@@ -94,7 +94,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
           ✕
         </button>
 
-        {/* İÇ İÇERİK ALANI */}
+        {/* İÇ İÇERİK ALANI (Kaydırma alt bar hariç tutularak izole edildi) */}
         <div className="flex flex-col flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 pb-28 md:pb-8">
           
           {/* ÜST BÖLÜM: YAN YANA GÖRSEL VE TEMEL BİLGİLER */}
@@ -184,7 +184,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
 
               {/* Öne Çıkan Özellikler */}
               {p.bullets && p.bullets.length > 0 && (
-                <div>
+                <div className="mb-6"> {/* mt-6 yerine buraya eklendi */}
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2.5 block">Öne Çıkan Özellikler</label>
                   <ul className="list-disc pl-5 text-xs sm:text-sm text-slate-700 space-y-1.5 font-medium">
                     {p.bullets.map((bullet: string, i: number) => (
@@ -193,11 +193,26 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
                   </ul>
                 </div>
               )}
+
+              {/* ✅ YENİ POZİSYON: Teknik Özellikler (Öne çıkan özelliklerin hemen altına moved) */}
+              {p.specs && p.specs.length > 0 && (
+                <div className="w-full mt-6">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Teknik Özellikler</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/80 p-4 rounded-xl border border-slate-100 text-xs text-slate-600 font-medium">
+                    {p.specs.map((spec: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-[#FF5733] font-bold select-none">•</span>
+                        <span>{spec}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ✅ ALT BÖLÜM: PANEL GEOMETRİSİ BOYUNCA SAĞA VE SOLA UZANAN TAM GENİŞLİK ALANI */}
-          <div className="mt-8 pt-6 border-t border-slate-100 w-full flex flex-col gap-6">
+          {/* ✅ ALT BÖLÜM: PANEL GEOMETRİSİ BOYUNCA SAĞA VE SOLA UZANAN TAM GENİŞLİK ALANI (Specs moved out) */}
+          <div className="mt-8 pt-6 border-t border-slate-100 w-full">
             
             {/* Ürün Açıklaması (max-w-none eklendi, artık alanı tamamen kaplar) */}
             <div className="w-full">
@@ -215,21 +230,6 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
               )}
             </div>
 
-            {/* Teknik Özellikler (max-w-none mantığıyla tam genişlik 2'li grid) */}
-            {p.specs && p.specs.length > 0 && (
-              <div className="w-full">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Teknik Özellikler</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/80 p-4 rounded-xl border border-slate-100 text-xs text-slate-600 font-medium">
-                  {p.specs.map((spec: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="text-[#FF5733] font-bold select-none">•</span>
-                      <span>{spec}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
           </div>
         </div>
 
@@ -246,15 +246,15 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             className="flex-1 bg-[#FF5733] hover:bg-[#e64e2e] text-white font-bold py-3 px-1.5 sm:px-4 rounded-xl shadow-md shadow-[#FF5733]/10 text-[11px] sm:text-xs tracking-wider uppercase transition-all whitespace-nowrap text-center"
           >
             Sepete Ekle
-          </button>
+            </button>
 
-          <a 
-            href={whatsappUrlForProduct(product.title)} 
-            target="_blank" 
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs tracking-wider uppercase transition-all whitespace-nowrap text-center shrink-0"
-          >
-            Bilgi Al
-          </a>
+            <a 
+              href={whatsappUrlForProduct(product.title)} 
+              target="_blank" 
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs tracking-wider uppercase transition-all whitespace-nowrap text-center shrink-0"
+            >
+              Bilgi Al
+            </a>
         </div>
 
       </div>
