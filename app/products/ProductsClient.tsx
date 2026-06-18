@@ -7,7 +7,7 @@ import CatalogPagination from "@/components/products/CatalogPagination";
 import { CartFab } from "@/components/cart/CartIndicator";
 import { CART_MIN_QTY } from "@/components/cart/CartContext";
 import ProductFilter from "@/components/products/ProductFilter";
-import { ProductExpandPanel } from "@/components/ProductExpandPanel";
+import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
 
 type Product = any;
 type Category = { key: string; label: string };
