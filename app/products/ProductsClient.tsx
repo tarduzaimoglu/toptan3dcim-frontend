@@ -4,14 +4,11 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import CatalogPagination from "@/components/products/CatalogPagination";
-import { CartFab } from "@/components/cart/CartIndicator";
 import { CART_MIN_QTY } from "@/components/cart/CartContext";
 import ProductFilter from "@/components/products/ProductFilter";
 
-// NOT: ProductExpandPanel dosyan app/products klasöründeyse import budur. 
-// Farklı bir yerdeyse (örneğin components) burayı kendi yoluna göre düzenle: 
-// import { ProductExpandPanel } from "@/components/ProductExpandPanel";
-import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
+// ProductExpandPanel yolunu kendi projene göre ayarla:
+import { ProductExpandPanel } from "./ProductExpandPanel"; 
 
 type Product = any;
 type Category = { key: string; label: string };
@@ -57,15 +54,13 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const sp = useSearchParams();
   const router = useRouter();
 
-  // URL Parametrelerini Çözümleme
   const initialSearch = sp?.get("q") || "";
   const initialCats = useMemo(() => sp?.get("cats") ? sp!.get("cats")!.split(",") : [], [sp]);
   const initialColors = useMemo(() => sp?.get("colors") ? sp!.get("colors")!.split(",") : [], [sp]);
   const initialSort = sp?.get("sort") || "newest";
   const initialPage = Number(sp?.get("page") ?? "1");
-  const openId = sp?.get("open"); // EKLENDİ: URL'den gelen ürün ID'si
+  const openId = sp?.get("open");
 
-  // --- MERKEZİ STATE YAPISI ---
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCats);
   const [selectedColors, setSelectedColors] = useState<string[]>(initialColors);
@@ -73,7 +68,6 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const [page, setPage] = useState<number>(initialPage);
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
   
-  // EKLENDİ: Anasayfadan yönlendirilen ürün için Modal state'i
   const [selectedProductFromUrl, setSelectedProductFromUrl] = useState<Product | null>(null);
 
   useEffect(() => {
@@ -84,7 +78,6 @@ export default function ProductsClient({ products, categories }: { products: Pro
     setSearchQuery(sp?.get("q") || "");
   }, [sp]);
 
-  // EKLENDİ: URL'de openId varsa ürünü bul ve modalı aç
   useEffect(() => {
     if (openId && products) {
       const found = products.find((p: any) => String(p.id) === String(openId));
@@ -259,9 +252,11 @@ export default function ProductsClient({ products, categories }: { products: Pro
           </div>
         </div>
       </div>
-      <CartFab />
+      
+      {/* ✅ <CartFab /> buradan tamamen kaldırıldı. 
+        Artık ekranda yüzen sepet butonu çıkmayacak. 
+      */}
 
-      {/* EKLENDİ: URL ile açılan Global Modal */}
       {selectedProductFromUrl && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <ProductExpandPanel 
