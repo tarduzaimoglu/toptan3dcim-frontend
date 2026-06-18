@@ -12,12 +12,10 @@ import "swiper/css/pagination";
 
 const SITE_MORU = "#7C3AED"; 
 
-// Eski Supabase karmaşasını temizledik, Next.js otomatik WebP yapacak.
 function resolveThumbSrc(product: any) {
   const target = product.attributes || product;
   const raw = (typeof target?.imageUrl === "string" && target.imageUrl.trim() && target.imageUrl) ||
               (typeof target?.image === "string" && target.image.trim() && target.image);
-
   return raw || "/products/placeholder.png";
 }
 
@@ -25,7 +23,7 @@ export default function ProductCarousel({ products }: { products: any[] }) {
   if (!products || products.length === 0) return null;
 
   return (
-    <div className="w-full relative overflow-visible">
+    <div className="w-full relative overflow-visible py-10">
       <Swiper
         effect={"coverflow"}
         grabCursor={true}
@@ -54,29 +52,30 @@ export default function ProductCarousel({ products }: { products: any[] }) {
           const price = attr.wholesalePrice || attr.WholesalePrice || attr.price || attr.Price || "0";
 
           return (
-            <SwiperSlide key={item.id} className="!overflow-visible py-10">
-              <Link href={`/products?open=${item.id}`}>
-                <div className="relative group rounded-2xl bg-white border border-slate-100 shadow-xl transition-all duration-300 cursor-pointer h-full flex flex-col">
+            <SwiperSlide key={item.id} className="!overflow-visible">
+              {/* Kartı bir Link ile sarmalayarak tüm alanı tıklanabilir yapıyoruz */}
+              <Link href={`/products?open=${item.id}`} className="block h-full">
+                <div className="relative group bg-white rounded-3xl border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 h-full flex flex-col overflow-hidden">
                   
-                  {/* YENİ: aspect-[3/4] ile dikey format ve tam oturan (çerçevesiz) tasarım */}
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-white border-b border-slate-100">
+                  {/* Görsel Alanı */}
+                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-white">
                     <Image
                       src={imgSrc}
                       alt={attr.title || attr.Title || "Ürün"}
                       fill
                       sizes="(max-width: 768px) 50vw, 20vw"
-                      // p-2 ve mix-blend silindi, resim tam oturacak.
-                      className="object-contain"
+                      className="object-contain p-4 group-hover:scale-105 transition-transform duration-700"
                     />
                   </div>
                   
-                  <div className="p-3 text-center flex-grow flex flex-col justify-center">
-                    <h3 className="text-[11px] md:text-sm font-semibold text-slate-800 line-clamp-1">
+                  {/* Bilgi Alanı */}
+                  <div className="p-4 text-center border-t border-slate-50 bg-slate-50/50">
+                    <h3 className="text-xs md:text-sm font-bold text-slate-900 line-clamp-1 mb-1">
                       {attr.title || attr.Title}
                     </h3>
-                    <div className="mt-1 flex items-center justify-center gap-1 text-[11px] md:text-sm font-bold">
+                    <div className="flex items-center justify-center gap-1 font-black text-sm">
                       <span style={{ color: SITE_MORU }}>{price} TL</span>
-                      <span className="text-black font-medium">/ Adet</span>
+                      <span className="text-slate-400 font-normal">/ Adet</span>
                     </div>
                   </div>
                 </div>
@@ -89,28 +88,19 @@ export default function ProductCarousel({ products }: { products: any[] }) {
       <style jsx global>{`
         .product-slider.swiper { 
           overflow: visible !important; 
-          padding-top: 50px;
-          padding-bottom: 50px;
         }
         .product-slider .swiper-slide {
-          opacity: 0.15;
-          filter: blur(8px);
-          transform: scale(0.65);
-          transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-          z-index: 1;
-        }
-        .product-slider .swiper-slide-next,
-        .product-slider .swiper-slide-prev {
-          opacity: 0.5 !important;
-          filter: blur(3px) !important;
-          transform: scale(0.85) !important;
-          z-index: 20;
+          opacity: 0.3;
+          transform: scale(0.8);
+          transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
         }
         .product-slider .swiper-slide-active {
-          opacity: 1 !important;
-          filter: blur(0) !important;
-          transform: scale(1.1) !important;
-          z-index: 50;
+          opacity: 1;
+          transform: scale(1.05);
+        }
+        /* Dokunmatik ekranlarda focus halkasını gizle */
+        .product-slider .swiper-slide a:focus {
+          outline: none;
         }
       `}</style>
     </div>
