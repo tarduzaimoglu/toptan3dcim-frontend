@@ -29,7 +29,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   const [zoomOn, setZoomOn] = useState(false);
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
 
-  // --- HIZLANDIRMA: VARYANT ÖN YÜKLEME (0ms tepki için) ---
+  // --- HIZLANDIRMA: VARYANT ÖN YÜKLEME ---
   useEffect(() => {
     if (p.variants && Array.isArray(p.variants)) {
       p.variants.forEach((v: any) => {
@@ -61,14 +61,18 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   };
 
   return (
-    <div className="relative bg-white rounded-3xl shadow-2xl max-w-5xl w-full mx-auto overflow-hidden">
+    // Modal ana kapsayıcı: max-h-[90vh] ile yüksekliği sınırlar, flex-col ile yapıyı böler.
+    <div className="relative bg-white rounded-3xl shadow-2xl max-w-5xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh]">
       <button onClick={onClose} className="absolute right-4 top-4 z-50 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition">✕</button>
 
-      <div className="flex flex-col md:flex-row h-[85vh] md:h-[600px]">
+      {/* İÇERİK ALANI (Scroll Edilebilir) */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:h-[600px]">
+        
         {/* SOL: GÖRSEL VE ZOOM ALANI */}
-        <div className="md:w-1/2 bg-gray-50 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden">
+        {/* shrink-0 eklendi: Flexbox'un mobilde bu alanı ezmesini engeller! */}
+        <div className="w-full md:w-1/2 bg-gray-50 flex flex-col items-center justify-start md:justify-center p-6 md:p-12 relative shrink-0">
           <div 
-            className="relative w-full aspect-square cursor-zoom-in"
+            className="relative w-full max-w-[350px] md:max-w-none aspect-square cursor-zoom-in"
             onMouseEnter={() => setZoomOn(true)}
             onMouseLeave={() => setZoomOn(false)}
             onMouseMove={(e) => {
@@ -87,7 +91,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
 
           {/* Thumbnail Galeri */}
           {!selectedVariant && images.length > 1 && (
-            <div className="flex gap-2 mt-6">
+            <div className="flex flex-wrap justify-center gap-2 mt-6">
               {images.map((img: string, i: number) => (
                 <button key={i} onClick={() => setActiveIndex(i)} className={`border-2 rounded-lg p-1 ${activeIndex === i ? 'border-[#FF5733]' : 'border-transparent'}`}>
                   <img src={img} className="w-12 h-12 object-contain" />
@@ -98,7 +102,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
         </div>
 
         {/* SAĞ: BİLGİLER */}
-        <div className="md:w-1/2 flex flex-col p-6 md:p-10 overflow-y-auto">
+        <div className="w-full md:w-1/2 flex flex-col p-6 md:p-10 md:overflow-y-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.title}</h2>
           <div className="text-2xl font-black text-[#FF5733] mb-6">{unitPrice} TL <span className="text-sm text-gray-400 font-normal">/ adet</span></div>
 
@@ -116,21 +120,21 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             </div>
           )}
 
-          <div className="prose prose-sm text-gray-600 mb-auto">
+          <div className="prose prose-sm text-gray-600 mb-6">
             {descriptionParagraphs.slice(0, 3).map((p, i) => <p key={i}>{p}</p>)}
           </div>
         </div>
       </div>
 
-      {/* SABİT ALT BAR */}
-      <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3 z-40 items-center">
+      {/* SABİT ALT BAR (Flex container'ın en altında her zaman görünür) */}
+      <div className="bg-white border-t p-3 md:p-4 flex gap-2 md:gap-3 items-center shrink-0">
         <div className="flex border rounded-xl overflow-hidden items-center">
-          <button onClick={() => setQtyStr(String(Math.max(minQty, Number(qtyStr)-1)))} className="px-4 py-3 bg-gray-50">-</button>
-          <input value={qtyStr} onChange={(e) => setQtyStr(e.target.value.replace(/\D/g, ''))} className="w-16 text-center font-bold" />
-          <button onClick={() => setQtyStr(String(Number(qtyStr)+1))} className="px-4 py-3 bg-gray-50">+</button>
+          <button onClick={() => setQtyStr(String(Math.max(minQty, Number(qtyStr)-1)))} className="px-3 md:px-4 py-3 bg-gray-50">-</button>
+          <input value={qtyStr} onChange={(e) => setQtyStr(e.target.value.replace(/\D/g, ''))} className="w-12 md:w-16 text-center font-bold outline-none" />
+          <button onClick={() => setQtyStr(String(Number(qtyStr)+1))} className="px-3 md:px-4 py-3 bg-gray-50">+</button>
         </div>
-        <button onClick={onAdd} className="flex-1 bg-[#FF5733] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-[#FF5733]/30">Sepete Ekle</button>
-        <a href={whatsappUrlForProduct(product.title)} target="_blank" className="px-6 py-3.5 bg-gray-900 text-white font-bold rounded-xl">Bilgi Al</a>
+        <button onClick={onAdd} className="flex-1 bg-[#FF5733] text-white font-bold py-3 md:py-3.5 rounded-xl shadow-lg shadow-[#FF5733]/30 whitespace-nowrap">Sepete Ekle</button>
+        <a href={whatsappUrlForProduct(product.title)} target="_blank" className="px-4 md:px-6 py-3 md:py-3.5 bg-gray-900 text-white font-bold rounded-xl whitespace-nowrap text-center">Bilgi Al</a>
       </div>
     </div>
   );
