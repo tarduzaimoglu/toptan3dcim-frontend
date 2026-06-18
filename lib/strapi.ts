@@ -22,6 +22,21 @@ function unwrapRelation(rel: any) {
   return unwrapEntity(rel);
 }
 
+export function buildQuery(params: Record<string, any>) {
+  const sp = new URLSearchParams();
+  const add = (key: string, val: any) => {
+    if (val === undefined || val === null || val === "") return;
+    sp.set(key, String(val));
+  };
+  if (params.filters?.slug?.$eq) add("filters[slug][$eq]", params.filters.slug.$eq);
+  if (params.filters?.category?.slug?.$eq) add("filters[category][slug][$eq]", params.filters.category.slug.$eq);
+  if (Array.isArray(params.sort)) params.sort.forEach((s: string, i: number) => add(`sort[${i}]`, s));
+  if (params.pagination?.pageSize) add("pagination[pageSize]", params.pagination.pageSize);
+  
+  const q = sp.toString();
+  return q ? `?${q}` : "";
+}
+
 export async function strapiFetch<T>(path: string, init?: RequestInit & { revalidate?: number }): Promise<T> {
   const url = `${STRAPI_URL}${path}`;
   const headers = new Headers(init?.headers);
@@ -48,58 +63,17 @@ function absMediaUrl(maybeRelativeUrl?: string | null) {
 
 export function getMediaUrls(media: any): string[] {
   if (!media) return [];
-  if (Array.isArray(media)) return media.map((x: any) => x?.url ?? x?.attributes?.url).map(absMediaUrl).filter((u): u is string => typeof u === "string");
-  if (Array.isArray(media?.data)) return media.data.map((x: any) => x?.attributes?.url ?? x?.url).map(absMediaUrl).filter((u): u is string => typeof u === "string");
+  if (Array.isArray(media)) return media.map((x: any) => x?.url ?? x?.attributes?.url).map(absMediaUrl).filter((u: string | null): u is string => typeof u === "string");
+  if (Array.isArray(media?.data)) return media.data.map((x: any) => x?.attributes?.url ?? x?.url).map(absMediaUrl).filter((u: string | null): u is string => typeof u === "string");
   const url = media?.data?.attributes?.url || media?.data?.url || media?.url;
   return url ? [absMediaUrl(url)!] : [];
 }
 
 export function getMediaUrl(media: any): string | null { return getMediaUrls(media)[0] ?? null; }
 
-export async function getCatalogProducts(): Promise<any[]> {
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
-  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
-  const items = unwrapCollection(res);
-
-  return items.map((x: AnyObj) => {
-    const cat = unwrapRelation(x?.category_product);
-    const imgField = x?.image;
-    const imageUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaUrl(m)).filter((u): u is string => typeof u === "string");
-
-    const mappedVariants = Array.isArray(x?.variants) 
-      ? x.variants.map((v: any) => ({
-          ColorName: v.ColorName || "",
-          ColorCode: v.ColorCode || "",
-          VariantImage: { url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" } 
-        })).filter((v: any) => v.ColorName !== "")
-      : [];
-
-    return {
-      id: String(x?.id ?? x?.documentId ?? ""),
-      title: x?.title || "",
-      category: String(cat?.slug ?? ""),
-      featured: !!x?.featured,
-      imageUrls,
-      imageUrl: imageUrls[0] || "",
-      image: imageUrls[0] || "", 
-      wholesalePrice: x?.wholesalePrice,
-      minQty: x?.minQty,
-      bullets: normalizeStringArray(x?.bullets),
-      specs: normalizeStringArray(x?.specs),
-      variants: mappedVariants,
-      description: x?.description || ""
-    };
-  });
-}
-
-export async function getCatalogCategories(): Promise<{ key: string; label: string }[]> {
-  const path = "/api/category-products?sort=order:asc&filters[isActive][$eq]=true&fields[0]=slug&fields[1]=title";
-  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
-  const items = unwrapCollection(res);
-  return items.map((x: AnyObj) => ({
-    key: String(x?.slug ?? x?.id ?? ""),
-    label: String(x?.title ?? x?.slug ?? "Kategori"),
-  })).filter((x: any) => Boolean(x.key && x.label));
+export function getCategorySlug(category: any): string | null {
+  if (!category) return null;
+  return category?.data?.attributes?.slug || category?.slug || null;
 }
 
 export async function getBlogPosts() {
@@ -124,6 +98,14 @@ export async function getPostBySlug(slug: string) {
     seo: { metaTitle: x.seo?.metaTitle || x.Title || x.title, metaDescription: x.seo?.metaDescription || x.Summary || x.summary }
   };
 }
+
+export async function getCategories(): Promise<StrapiCategory[]> {
+  const q = buildQuery({ sort: ["title:asc"], pagination: { pageSize: 200 } });
+  const res = await strapiFetch<any>(`/api/categories${q}`, { revalidate: CACHE_REVALIDATE });
+  return unwrapCollection(res);
+}
+
+export type StrapiCategory = { id: number; title: string; slug: string; description?: string; };
 
 function normalizeStringArray(input: any): string[] {
   if (!input) return [];
@@ -151,4 +133,59 @@ function normalizeStringArray(input: any): string[] {
     return data.filter(item => item && typeof item !== "object").map((item: any) => String(item).replace(/<\/?[^>]+(>|$)/g, "").trim()).filter(Boolean);
   }
   return [];
+}
+
+export async function getCatalogCategories(): Promise<{ key: string; label: string }[]> {
+  const path = "/api/category-products?sort=order:asc&filters[isActive][$eq]=true&fields[0]=slug&fields[1]=title";
+  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  const items = unwrapCollection(res);
+  return items.map((x: AnyObj) => ({
+    key: String(x?.slug ?? x?.id ?? ""),
+    label: String(x?.title ?? x?.slug ?? "Kategori"),
+  })).filter((x: any) => Boolean(x.key && x.label));
+}
+
+export async function getCatalogProducts(): Promise<any[]> {
+  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
+  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  const items = unwrapCollection(res);
+  return items.map((x: AnyObj) => {
+    const cat = unwrapRelation(x?.category_product);
+    const imgField = x?.image;
+    const imageUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaUrl(m)).filter((u: string | null): u is string => typeof u === "string");
+    const mappedVariants = Array.isArray(x?.variants) 
+      ? x.variants.map((v: any) => ({
+          ColorName: v.ColorName || "",
+          ColorCode: v.ColorCode || "",
+          VariantImage: { url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" } 
+        })).filter((v: any) => v.ColorName !== "")
+      : [];
+    return {
+      id: String(x?.id ?? x?.documentId ?? ""),
+      title: x?.title || "",
+      category: String(cat?.slug ?? ""),
+      featured: !!x?.featured,
+      imageUrls,
+      imageUrl: imageUrls[0] || "",
+      image: imageUrls[0] || "", 
+      wholesalePrice: x?.wholesalePrice,
+      minQty: x?.minQty,
+      bullets: normalizeStringArray(x?.bullets),
+      specs: normalizeStringArray(x?.specs),
+      variants: mappedVariants,
+      description: x?.description || ""
+    };
+  });
+}
+
+export async function getCustomProductTypes(): Promise<any[]> {
+  const path = "/api/custom-product-types?sort=order:asc&filters[isActive][$eq]=true&populate[0]=image";
+  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  const items = unwrapCollection(res);
+  return items.map((x: AnyObj) => ({
+    id: String(x?.id ?? ""),
+    title: x?.title ?? "",
+    slug: x?.slug ?? "",
+    image: getMediaUrl(x?.image) || "/products/placeholder.png",
+  }));
 }
