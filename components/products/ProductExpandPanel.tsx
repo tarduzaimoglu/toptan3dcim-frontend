@@ -94,8 +94,8 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
           ✕
         </button>
 
-        {/* İÇ İÇERİK ALANI (Kaydırma çubuğu alt barı kapsamayacak şekilde düzenlendi) */}
-        <div className="flex flex-col flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 pb-24 md:pb-6">
+        {/* İÇ İÇERİK ALANI */}
+        <div className="flex flex-col flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 pb-28 md:pb-8">
           
           {/* ÜST BÖLÜM: YAN YANA GÖRSEL VE TEMEL BİLGİLER */}
           <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start w-full">
@@ -103,7 +103,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             {/* SOL ALAN: GELİŞMİŞ GALERİ DÜZENİ (Çerçeve Radiusları Kaldırıldı) */}
             <div className="w-full md:w-1/2 flex flex-row items-start gap-3 shrink-0">
               
-              {/* Büyük Ana Görsel Çerçevesi (rounded-none yapıldı) */}
+              {/* Büyük Ana Görsel Çerçevesi */}
               <div 
                 className="flex-1 aspect-square bg-white border border-slate-100 p-3 shadow-sm flex items-center justify-center overflow-hidden relative cursor-pointer md:cursor-zoom-in rounded-none"
                 onMouseEnter={() => setZoomOn(true)}
@@ -114,7 +114,6 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
                 }}
                 onClick={() => setIsLightboxOpen(true)}
               >
-                {/* Görsel Oranı Bozulmadan Çerçeve Sınırına Kadar Tam Fit Olur */}
                 <img 
                   src={activeImg} 
                   className="w-full h-full object-contain mix-blend-multiply transition-all duration-300 rounded-none" 
@@ -128,7 +127,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
                   style={{ backgroundImage: `url(${activeImg})`, backgroundPosition: `${origin.x}% ${origin.y}%`, backgroundSize: '220%' }} />
               )}
 
-              {/* SAĞ TARAF: BÜYÜTÜLMÜŞ KÜÇÜK RESİMLER SÜTUNU (Genişlik artırıldı, sütunu tam doldurur) */}
+              {/* SAĞ TARAF: BÜYÜTÜLMÜŞ KÜÇÜK RESİMLER SÜTUNU (Grid Yapısı + Sütun Genişletildi) */}
               {allImages.length > 1 && (
                 <div 
                   className={`shrink-0 w-16 sm:w-24 flex flex-col gap-2 ${
@@ -152,7 +151,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
               )}
             </div>
 
-            {/* SAĞ ALAN: TEMEL ÜRÜN BİLGİLERİ */}
+            {/* SAĞ ALAN: TEMEL ÜRÜN BİLGİLERİ (BAŞLIK, FİYAT, RENKLER, MADDELER) */}
             <div className="w-full md:w-1/2 flex flex-col">
               <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2 pr-8">{product.title}</h2>
               
@@ -183,7 +182,105 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
                 </div>
               )}
 
-              {/* Öne Çıkan Özellikler */}
+              {/* Öne Çıkan Özellikler (Maddeler) */}
               {p.bullets && p.bullets.length > 0 && (
-                <div className="mb-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase
+                <div>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2.5 block">Öne Çıkan Özellikler</label>
+                  <ul className="list-disc pl-5 text-xs sm:text-sm text-slate-700 space-y-1.5 font-medium">
+                    {p.bullets.map((bullet: string, i: number) => (
+                      <li key={i} className="marker:text-[#FF5733]">{bullet}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ✅ ALT BÖLÜM: PANEL BOYUNCA SOLA UZANAN GENİŞ AÇIKLAMA VE TEKNİK ÖZELLİKLER */}
+          <div className="mt-8 pt-6 border-t border-slate-100 w-full flex flex-col gap-6">
+            
+            {/* Ürün Açıklaması (Full Width) */}
+            <div className="w-full">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Ürün Açıklaması</label>
+              <div className={`prose prose-sm text-xs sm:text-sm text-gray-600 transition-all duration-300 ${!isExpanded ? "line-clamp-3" : ""}`}>
+                {descriptionParagraphs.map((p, i) => <p key={i} className="mb-1">{p}</p>)}
+              </div>
+              {isLongDescription && (
+                <button 
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-[#7C3AED] font-bold text-xs mt-2 hover:underline focus:outline-none"
+                >
+                  {isExpanded ? "Daha Az Göster" : "Devamını Oku..."}
+                </button>
+              )}
+            </div>
+
+            {/* Teknik Özellikler Tablosu/Kutusu (Full Width) */}
+            {p.specs && p.specs.length > 0 && (
+              <div className="w-full">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Teknik Özellikler</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/80 p-4 rounded-xl border border-slate-100 text-xs text-slate-600 font-medium">
+                  {p.specs.map((spec: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="text-[#FF5733] font-bold select-none">•</span>
+                      <span>{spec}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* SABİT ALT BAR */}
+        <div className="absolute md:relative bottom-0 left-0 w-full bg-white border-t border-slate-100 p-3.5 flex gap-2 sm:gap-3 items-center shrink-0 z-20 shadow-[0_-8px_24px_rgba(0,0,0,0.04)]">
+          <div className="flex border border-slate-200 rounded-xl overflow-hidden items-center bg-slate-50 shrink-0 shadow-sm">
+            <button onClick={() => setQtyStr(String(Math.max(minQty, Number(qtyStr)-1)))} className="px-3 py-2.5 bg-slate-100/70 hover:bg-slate-200/80 font-black transition text-slate-500 text-sm">-</button>
+            <input value={qtyStr} onChange={(e) => setQtyStr(e.target.value.replace(/\D/g, ''))} className="w-9 sm:w-14 text-center font-bold outline-none bg-transparent text-xs sm:text-sm text-slate-800" />
+            <button onClick={() => setQtyStr(String(Number(qtyStr)+1))} className="px-3 py-2.5 bg-slate-100/70 hover:bg-slate-200/80 font-black transition text-slate-500 text-sm">+</button>
+          </div>
+
+          <button 
+            onClick={onAdd} 
+            className="flex-1 bg-[#FF5733] hover:bg-[#e64e2e] text-white font-bold py-3 px-1.5 sm:px-4 rounded-xl shadow-md shadow-[#FF5733]/10 text-[11px] sm:text-xs tracking-wider uppercase transition-all whitespace-nowrap text-center"
+          >
+            Sepete Ekle
+          </button>
+
+          <a 
+            href={whatsappUrlForProduct(product.title)} 
+            target="_blank" 
+            className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs tracking-wider uppercase transition-all whitespace-nowrap text-center shrink-0"
+          >
+            Bilgi Al
+          </a>
+        </div>
+
+      </div>
+
+      {/* TAM EKRAN GÖRSEL İNCELEME MODU (LIGHTBOX) */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-[10000] bg-slate-950/95 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setIsLightboxOpen(false)} />
+          
+          <button 
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute right-6 top-6 z-[10001] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all text-xl focus:outline-none"
+          >
+            ✕
+          </button>
+
+          <div className="relative max-w-full max-h-[85vh] w-auto h-auto flex items-center justify-center z-10 select-none">
+            <img 
+              src={activeImg} 
+              className="max-w-full max-h-[85vh] object-contain rounded-none shadow-2xl animate-in zoom-in-95 duration-200" 
+              alt="Ürün Detay Tam Ekran" 
+            />
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
