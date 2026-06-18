@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation"; // YENİ: useRouter eklendi
+import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/components/cart/CartContext"; 
 
 const navItems = [
@@ -44,11 +44,11 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Animasyon Evreleri: idle (bekleme) -> loading (dalga+cam) -> pop (patlama)
+  // Animasyon Evreleri: idle (bekleme) -> loading (enerji toplama) -> pop (patlama/yeni sayfa)
   const [navState, setNavState] = useState<'idle' | 'loading' | 'pop'>('idle');
   
   const pathname = usePathname();
-  const router = useRouter(); // Next.js yönlendiricisi
+  const router = useRouter();
   const { items } = useCart();
 
   const cartCount = useMemo(() => {
@@ -63,29 +63,26 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // YENİ: Anında geçişi durdurup, animasyon süresini bizim belirlediğimiz fonksiyon
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // Eğer aynı sayfadaysa veya dış bir linkse normal davran
     if (pathname === href || href.startsWith("http")) return; 
     
-    e.preventDefault(); // Next.js'in 0ms'lik anında geçişini bloke et!
-    setOpen(false); // Mobil menüyü kapat
+    e.preventDefault(); 
+    setOpen(false); 
     
-    // 1. Evre: Mor dalga merkeze çekilir ve cam çember dönmeye başlar
+    // 1. Evre: Mor atmosfer belirir, enerji halkaları merkeze çekilir (400ms)
     setNavState('loading');
 
-    // 150ms sonra...
     setTimeout(() => {
-      // 2. Evre: Logo büyür ve cam çemberi patlatır
+      // 2. Evre: Logo büyür, cam çember patlar, atmosfer dağılır (300ms)
       setNavState('pop');
       
-      // Patlama efektinin görülmesi için 150ms daha bekle ve yeni sayfaya geç
       setTimeout(() => {
         router.push(href);
-        setNavState('idle'); // Ekranı temizle
-      }, 150);
+        // Sayfa yüklendikten sonra ekranı yumuşakça temizle
+        setTimeout(() => setNavState('idle'), 100);
+      }, 300); 
 
-    }, 150); // Toplam geçiş süresi: 300ms (Gözün en sevdiği premium süre)
+    }, 400); // 400ms + 300ms = Kullanıcının efekti izleyeceği ideal 700ms süre
   };
 
   return (
@@ -110,7 +107,6 @@ export default function Header() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          {/* Orijinal Header Logosu (Sabit Kalır) */}
           <Link href="/" className="group flex items-center shrink min-w-0" onClick={(e) => handleNavClick(e, "/")}>
             <div className="flex items-center gap-0.5 transition-transform group-hover:scale-105">
               <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
@@ -183,37 +179,42 @@ export default function Header() {
                   <svg className="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
                 </Link>
               ))}
-              
-              <div className="mt-4 p-5 rounded-2xl bg-slate-900 text-white shadow-inner">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Destek Hattı</p>
-                <a href="mailto:info@kesiolabs.com" className="text-[17px] font-black text-[#FF7A00]">info@kesiolabs.com</a>
-              </div>
             </nav>
           </div>
         )}
       </header>
 
-      {/* YENİ: EKRANIN TAM ORTASINDA AÇILAN GECİKMELİ GEÇİŞ EFEKTİ */}
+      {/* YENİ VE GELİŞTİRİLMİŞ: PREMİUM GEÇİŞ EFEKTİ (700ms) */}
       {navState !== 'idle' && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="relative flex items-center justify-center">
             
-            {/* 1. Logoya doğru küçülen mor enerji dalgası */}
+            {/* 1. PREMIUM DETAY: Merkeze yerleşen devasa Mor/Turuncu Işık Atmosferi (Aura) */}
+            <div className={`absolute w-[350px] h-[350px] rounded-full blur-[90px] transition-all duration-300
+              ${navState === 'loading' 
+                ? 'bg-gradient-to-tr from-[#7C3AED] to-[#FF7A00] opacity-30 animate-pulse-slow scale-100' 
+                : 'bg-[#FF7A00] opacity-0 scale-150'}`} 
+            />
+
+            {/* 2. Logoya Doğru Çekilen Fiziksel Enerji Halkaları */}
             {navState === 'loading' && (
-              <div className="absolute w-48 h-48 bg-[#7C3AED]/20 rounded-full pointer-events-none animate-suck-in" />
+              <>
+                <div className="absolute w-64 h-64 border border-[#7C3AED]/40 rounded-full animate-suck-in-1" />
+                <div className="absolute w-96 h-96 border border-[#FF7A00]/20 rounded-full animate-suck-in-2" />
+              </>
             )}
 
-            {/* 2. Dönen cam çember (Loading) / Patlayan Turuncu Çember (Pop) */}
+            {/* 3. Dönen Şık Cam Çember & Turuncu Patlama Halkası */}
             <div
-              className={`absolute rounded-full pointer-events-none
+              className={`absolute rounded-full pointer-events-none transition-all duration-300
               ${navState === 'loading'
-                  ? 'w-[120%] h-[140%] border border-[#7C3AED]/30 border-t-[#FF7A00] bg-white/40 backdrop-blur-lg animate-spin-glass'
-                  : 'w-[120%] h-[140%] border-4 border-[#FF7A00] animate-pop-ring'
+                  ? 'w-[130%] h-[150%] sm:w-[140%] sm:h-[160%] border-2 border-white/60 border-t-[#7C3AED] border-r-[#FF7A00] shadow-[0_0_40px_rgba(124,58,237,0.3)] animate-spin-glass'
+                  : 'w-[130%] h-[150%] sm:w-[140%] sm:h-[160%] border-4 border-[#7C3AED] shadow-[0_0_60px_rgba(255,122,0,0.6)] animate-pop-ring'
               }`}
             />
 
-            {/* Merkezdeki Logo */}
-            <div className={`flex items-center gap-1 relative z-10 ${navState === 'pop' ? 'animate-logo-pop' : ''}`}>
+            {/* Merkezdeki Logo (Premium Gölgelendirmeli) */}
+            <div className={`flex items-center gap-1 relative z-10 drop-shadow-2xl ${navState === 'pop' ? 'animate-logo-pop' : ''}`}>
               <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
               <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
               <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED] mt-3">CIM</span>
@@ -235,42 +236,61 @@ export default function Header() {
           animation-play-state: paused;
         }
 
-        /* 1. Ekranın dışından Logoya doğru çekilen enerji dalgası */
-        @keyframes suck-in {
-          0% { transform: scale(5); opacity: 0; }
-          40% { opacity: 1; }
-          100% { transform: scale(0.2); opacity: 0; }
+        /* 1. Dışarıdan merkeze çekilen 1. Halka */
+        @keyframes suck-in-1 {
+          0% { transform: scale(2.5); opacity: 0; border-width: 1px; }
+          30% { opacity: 1; border-width: 4px; }
+          100% { transform: scale(0.5); opacity: 0; border-width: 8px; }
         }
-        .animate-suck-in {
-          animation: suck-in 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animate-suck-in-1 {
+          animation: suck-in-1 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* 2. Etrafta dönen cam/yükleniyor çemberi */
+        /* 2. Dışarıdan merkeze çekilen 2. Halka (Gecikmeli) */
+        @keyframes suck-in-2 {
+          0% { transform: scale(3.5); opacity: 0; }
+          50% { opacity: 0.5; }
+          100% { transform: scale(0.8); opacity: 0; }
+        }
+        .animate-suck-in-2 {
+          animation: suck-in-2 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+        }
+
+        /* Aura (Arka plan neon efekti) nefes alması */
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.2; transform: scale(0.9); }
+          50% { opacity: 0.4; transform: scale(1.1); }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 0.4s ease-in-out infinite;
+        }
+
+        /* 3. Dönen Cam Çember */
         @keyframes spin-glass {
-          0% { transform: rotate(0deg) scale(1); }
-          100% { transform: rotate(360deg) scale(1); }
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
         .animate-spin-glass {
-          animation: spin-glass 0.4s linear infinite;
+          animation: spin-glass 0.6s cubic-bezier(0.68, -0.55, 0.26, 1.55) infinite;
         }
 
-        /* 3. Cam çemberin patlayıp yok olması */
+        /* 4. Cam çemberin patlayıp yok olması (Pop) */
         @keyframes pop-ring {
-          0% { transform: scale(1); opacity: 1; border-width: 4px; }
-          100% { transform: scale(1.8); opacity: 0; border-width: 0px; }
+          0% { transform: scale(1); opacity: 1; border-width: 6px; }
+          100% { transform: scale(2.5); opacity: 0; border-width: 0px; }
         }
         .animate-pop-ring {
-          animation: pop-ring 0.15s ease-out forwards;
+          animation: pop-ring 0.3s ease-out forwards;
         }
 
-        /* 4. Logonun büyüyerek ekrana vurması */
+        /* 5. Logonun büyüyerek ekrana vurması (Pop) */
         @keyframes logo-pop {
           0% { transform: scale(1); }
-          50% { transform: scale(1.15); }
+          40% { transform: scale(1.15); }
           100% { transform: scale(1); }
         }
         .animate-logo-pop {
-          animation: logo-pop 0.15s ease-out forwards;
+          animation: logo-pop 0.3s ease-out forwards;
         }
       `}</style>
     </>
