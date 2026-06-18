@@ -51,21 +51,16 @@ export default function Header() {
     return items.reduce((total, item) => total + item.qty, 0);
   }, [items]);
 
-  // YENİ: Sepet sayısı 99'u geçerse 99+ göstererek butonun uzamasını engelliyoruz
   const displayCartCount = cartCount > 99 ? "99+" : cartCount;
 
+  // Sadece Scroll efektini tutuyoruz
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      document.body.style.overflow = "";
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-  }, [open]);
+  // NOT: Soruna sebep olan `document.body.style.overflow = "hidden"` bloğunu tamamen sildik!
 
   return (
     <>
@@ -91,14 +86,12 @@ export default function Header() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          {/* Logo Alanı - YENİ: min-w-0 ve shrink ekleyerek mobilde alan esnekliği sağlandı */}
           <Link href="/" className="group flex items-center gap-0.5 transition-transform hover:scale-105 shrink min-w-0" onClick={() => setOpen(false)}>
             <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
             <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
             <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
           </Link>
 
-          {/* Masaüstü Menü */}
           <nav className="hidden md:flex items-center gap-10">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -121,8 +114,6 @@ export default function Header() {
             })}
           </nav>
 
-          {/* Sağ Alan: Sepet & Mobil Buton */}
-          {/* YENİ: shrink-0 eklendi, böylece ne kadar ürün eklenirse eklensin bu alan ezilmeyecek */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Link
               href="/cart"
@@ -138,7 +129,6 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Mobil Menü Butonu */}
             <button
               type="button"
               className="md:hidden flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-700 shrink-0"
@@ -149,10 +139,11 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobil Menü Paneli */}
+        {/* Mobil Menü Paneli - YENİ YAPI */}
+        {/* overscroll-contain ve max-h eklendi, böylece sorunsuz scroll edilir */}
         {open && (
-          <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
-            <nav className="flex flex-col p-6 space-y-2">
+          <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto overscroll-contain">
+            <nav className="flex flex-col p-6 space-y-2 pb-10">
               {navItems.map((item, idx) => (
                 <Link
                   key={item.label}
