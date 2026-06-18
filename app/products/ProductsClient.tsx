@@ -11,7 +11,7 @@ import ProductFilter from "@/components/products/ProductFilter";
 // NOT: ProductExpandPanel dosyan app/products klasöründeyse import budur. 
 // Farklı bir yerdeyse (örneğin components) burayı kendi yoluna göre düzenle: 
 // import { ProductExpandPanel } from "@/components/ProductExpandPanel";
-import { ProductExpandPanel } from "./ProductExpandPanel"; 
+import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
 
 type Product = any;
 type Category = { key: string; label: string };
