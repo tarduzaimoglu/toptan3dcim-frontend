@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import type { Product } from "@/lib/products/types";
 import { useCart, CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/CartContext";
 
@@ -28,6 +28,9 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   const [qtyStr, setQtyStr] = useState<string>(String(p.minQty || CART_MIN_QTY));
   const [zoomOn, setZoomOn] = useState(false);
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
+  
+  // YENİ: Açıklama metni için state
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // --- HIZLANDIRMA: VARYANT ÖN YÜKLEME ---
   useEffect(() => {
@@ -47,6 +50,9 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   const unitPrice = p.wholesalePrice ?? FALLBACK_UNIT_PRICE;
   const minQty = Number(p.minQty || p.minQtyText || CART_MIN_QTY);
   const descriptionParagraphs = useMemo(() => parseDescription(p.description), [p.description]);
+  
+  // Metin yeterince uzun mu kontrolü (Sadece uzun metinlerde butonu gösteririz)
+  const isLongDescription = descriptionParagraphs.join(" ").length > 150;
 
   const onAdd = () => {
     const qty = Math.max(minQty, Number(qtyStr) || minQty);
@@ -61,15 +67,12 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   };
 
   return (
-    // Modal ana kapsayıcı: max-h-[90vh] ile yüksekliği sınırlar, flex-col ile yapıyı böler.
     <div className="relative bg-white rounded-3xl shadow-2xl max-w-5xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh]">
       <button onClick={onClose} className="absolute right-4 top-4 z-50 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition">✕</button>
 
-      {/* İÇERİK ALANI (Scroll Edilebilir) */}
       <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:h-[600px]">
         
-        {/* SOL: GÖRSEL VE ZOOM ALANI */}
-        {/* shrink-0 eklendi: Flexbox'un mobilde bu alanı ezmesini engeller! */}
+        {/* SOL: GÖRSEL ALANI */}
         <div className="w-full md:w-1/2 bg-gray-50 flex flex-col items-center justify-start md:justify-center p-6 md:p-12 relative shrink-0">
           <div 
             className="relative w-full max-w-[350px] md:max-w-none aspect-square cursor-zoom-in"
@@ -83,13 +86,11 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             <img src={activeImg} className="w-full h-full object-contain mix-blend-multiply" alt={product.title} />
           </div>
 
-          {/* Zoom Kutusu (Masaüstü) */}
           {zoomOn && (
             <div className="hidden md:block absolute left-full top-0 z-50 w-full h-full bg-white border shadow-2xl pointer-events-none"
               style={{ backgroundImage: `url(${activeImg})`, backgroundPosition: `${origin.x}% ${origin.y}%`, backgroundSize: '250%' }} />
           )}
 
-          {/* Thumbnail Galeri */}
           {!selectedVariant && images.length > 1 && (
             <div className="flex flex-wrap justify-center gap-2 mt-6">
               {images.map((img: string, i: number) => (
@@ -101,7 +102,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
           )}
         </div>
 
-        {/* SAĞ: BİLGİLER */}
+        {/* SAĞ: BİLGİLER ALANI */}
         <div className="w-full md:w-1/2 flex flex-col p-6 md:p-10 md:overflow-y-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.title}</h2>
           <div className="text-2xl font-black text-[#FF5733] mb-6">{unitPrice} TL <span className="text-sm text-gray-400 font-normal">/ adet</span></div>
@@ -120,13 +121,24 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             </div>
           )}
 
-          <div className="prose prose-sm text-gray-600 mb-6">
-            {descriptionParagraphs.slice(0, 3).map((p, i) => <p key={i}>{p}</p>)}
+          {/* YENİ: Kısaltılmış Metin Yapısı */}
+          <div className="mb-6">
+            <div className={`prose prose-sm text-gray-600 transition-all duration-300 ${!isExpanded ? "line-clamp-3" : ""}`}>
+              {descriptionParagraphs.map((p, i) => <p key={i}>{p}</p>)}
+            </div>
+            {isLongDescription && (
+              <button 
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-[#7C3AED] font-bold text-sm mt-2 hover:underline focus:outline-none"
+              >
+                {isExpanded ? "Daha Az Göster" : "Devamını Oku..."}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* SABİT ALT BAR (Flex container'ın en altında her zaman görünür) */}
+      {/* SABİT ALT BAR */}
       <div className="bg-white border-t p-3 md:p-4 flex gap-2 md:gap-3 items-center shrink-0">
         <div className="flex border rounded-xl overflow-hidden items-center">
           <button onClick={() => setQtyStr(String(Math.max(minQty, Number(qtyStr)-1)))} className="px-3 md:px-4 py-3 bg-gray-50">-</button>
