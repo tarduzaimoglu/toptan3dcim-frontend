@@ -20,7 +20,6 @@ const PROMOS = [
 
 const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 
-// --- İkonlar ---
 function ShoppingCartIcon({ className = "" }: { className?: string }) {
   return (
     <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -44,6 +43,10 @@ function AnimatedBurger({ open }: { open: boolean }) {
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Geçiş efekti durumu
+  const [isNavigating, setIsNavigating] = useState(false);
+  
   const pathname = usePathname();
   const { items } = useCart();
 
@@ -53,14 +56,28 @@ export default function Header() {
 
   const displayCartCount = cartCount > 99 ? "99+" : cartCount;
 
-  // Sadece Scroll efektini tutuyoruz
+  // Scroll durumu
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // NOT: Soruna sebep olan `document.body.style.overflow = "hidden"` bloğunu tamamen sildik!
+  // Sayfa yüklendiğinde geçiş ekranını yumuşakça kapatır
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsNavigating(false);
+    }, 150); // Çok hızlı yüklenirse ekranda flaş patlamaması için minik bir gecikme
+    return () => clearTimeout(timer);
+  }, [pathname]);
+
+  // Yeni sayfaya tıklandığında tam ekran animasyonu başlatır
+  const handleNavClick = (href: string) => {
+    if (pathname !== href && !href.startsWith("http")) {
+      setIsNavigating(true);
+    }
+    setOpen(false); // Mobilde menüyü kapat
+  };
 
   return (
     <>
@@ -86,7 +103,7 @@ export default function Header() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          <Link href="/" className="group flex items-center gap-0.5 transition-transform hover:scale-105 shrink min-w-0" onClick={() => setOpen(false)}>
+          <Link href="/" className="group flex items-center gap-0.5 transition-transform hover:scale-105 shrink min-w-0" onClick={() => handleNavClick("/")}>
             <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
             <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
             <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
@@ -99,6 +116,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
+                  onClick={() => handleNavClick(item.href)}
                   className={`relative text-[14px] font-bold transition-colors ${
                     isActive ? "text-[#7C3AED]" : "text-slate-600 hover:text-slate-900"
                   } group`}
@@ -117,6 +135,7 @@ export default function Header() {
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Link
               href="/cart"
+              onClick={() => handleNavClick("/cart")}
               className="group relative flex items-center gap-1.5 sm:gap-2.5 rounded-2xl bg-[#7C3AED] px-3 sm:px-5 py-2 sm:py-2.5 text-sm font-bold text-white shadow-xl shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:bg-[#6b1add]"
             >
               <ShoppingCartIcon className="transition-transform group-hover:scale-110" />
@@ -139,8 +158,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobil Menü Paneli - YENİ YAPI */}
-        {/* overscroll-contain ve max-h eklendi, böylece sorunsuz scroll edilir */}
+        {/* Mobil Menü Paneli */}
         {open && (
           <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto overscroll-contain">
             <nav className="flex flex-col p-6 space-y-2 pb-10">
@@ -148,7 +166,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={() => handleNavClick(item.href)}
                   className="flex items-center justify-between py-4 px-5 rounded-2xl text-[16px] font-bold text-slate-800 bg-slate-50/50 border border-transparent hover:border-[#7C3AED]/20 hover:bg-[#7C3AED]/5 hover:text-[#7C3AED] transition-all"
                   style={{ transitionDelay: `${idx * 50}ms` }}
                 >
@@ -165,6 +183,17 @@ export default function Header() {
           </div>
         )}
       </header>
+
+      {/* YENİ: TAM EKRAN MOR GEÇİŞ EFEKTİ (APP-LIKE EXPERIENCE) */}
+      {isNavigating && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#7C3AED] animate-in fade-in duration-200">
+          <div className="flex items-center gap-1 animate-pulse">
+            <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-white">TOPTAN</span>
+            <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
+            <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-white">CIM</span>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @keyframes marquee {
