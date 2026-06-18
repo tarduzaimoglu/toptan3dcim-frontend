@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // YENİ: useRouter eklendi
 import { useCart } from "@/components/cart/CartContext"; 
 
 const navItems = [
@@ -44,10 +44,11 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // YENİ: Geçiş animasyonunun evreleri (idle, loading, done)
-  const [navState, setNavState] = useState<'idle' | 'loading' | 'done'>('idle');
+  // Animasyon Evreleri: idle (bekleme) -> loading (dalga+cam) -> pop (patlama)
+  const [navState, setNavState] = useState<'idle' | 'loading' | 'pop'>('idle');
   
   const pathname = usePathname();
+  const router = useRouter(); // Next.js yönlendiricisi
   const { items } = useCart();
 
   const cartCount = useMemo(() => {
@@ -62,21 +63,29 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // YENİ: Sayfa yüklendiği an "Camı Patlatma (done)" evresine geçer
-  useEffect(() => {
-    if (navState === 'loading') {
-      setNavState('done');
-      // Cam patlama efekti bittikten sonra idle duruma döner
-      const timer = setTimeout(() => setNavState('idle'), 250);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname]);
+  // YENİ: Anında geçişi durdurup, animasyon süresini bizim belirlediğimiz fonksiyon
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Eğer aynı sayfadaysa veya dış bir linkse normal davran
+    if (pathname === href || href.startsWith("http")) return; 
+    
+    e.preventDefault(); // Next.js'in 0ms'lik anında geçişini bloke et!
+    setOpen(false); // Mobil menüyü kapat
+    
+    // 1. Evre: Mor dalga merkeze çekilir ve cam çember dönmeye başlar
+    setNavState('loading');
 
-  const handleNavClick = (href: string) => {
-    if (pathname !== href && !href.startsWith("http")) {
-      setNavState('loading');
-    }
-    setOpen(false);
+    // 150ms sonra...
+    setTimeout(() => {
+      // 2. Evre: Logo büyür ve cam çemberi patlatır
+      setNavState('pop');
+      
+      // Patlama efektinin görülmesi için 150ms daha bekle ve yeni sayfaya geç
+      setTimeout(() => {
+        router.push(href);
+        setNavState('idle'); // Ekranı temizle
+      }, 150);
+
+    }, 150); // Toplam geçiş süresi: 300ms (Gözün en sevdiği premium süre)
   };
 
   return (
@@ -101,27 +110,9 @@ export default function Header() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          {/* LOGO BÖLÜMÜ - GEÇİŞ EFEKTLERİNİN MERKEZİ */}
-          <Link href="/" className="relative group flex items-center shrink min-w-0 z-50" onClick={() => handleNavClick("/")}>
-            
-            {/* 1. Tıklama Anı: Logoya doğru küçülen mor enerji dalgası */}
-            {navState === 'loading' && (
-              <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-[#7C3AED] rounded-full pointer-events-none animate-suck-in mix-blend-multiply" />
-            )}
-
-            {/* 2. Yükleniyor ve Bitiş: Dönen cam çember ve Patlama */}
-            {(navState === 'loading' || navState === 'done') && (
-              <div
-                className={`absolute top-1/2 left-1/2 w-[110%] h-[140%] sm:w-[105%] sm:h-[130%] rounded-full pointer-events-none
-                ${navState === 'loading'
-                    ? 'border border-[#7C3AED]/40 border-t-[#FF7A00] bg-white/20 backdrop-blur-sm animate-spin-glass'
-                    : 'border-2 border-[#FF7A00] animate-pop-ring'
-                }`}
-              />
-            )}
-
-            {/* Logo Metni (Bitişte Pulse Efekti) */}
-            <div className={`flex items-center gap-0.5 relative z-10 transition-transform ${navState === 'done' ? 'animate-logo-pop' : 'group-hover:scale-105'}`}>
+          {/* Orijinal Header Logosu (Sabit Kalır) */}
+          <Link href="/" className="group flex items-center shrink min-w-0" onClick={(e) => handleNavClick(e, "/")}>
+            <div className="flex items-center gap-0.5 transition-transform group-hover:scale-105">
               <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
               <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
               <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
@@ -135,7 +126,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={() => handleNavClick(item.href)}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className={`relative text-[14px] font-bold transition-colors ${
                     isActive ? "text-[#7C3AED]" : "text-slate-600 hover:text-slate-900"
                   } group`}
@@ -154,7 +145,7 @@ export default function Header() {
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Link
               href="/cart"
-              onClick={() => handleNavClick("/cart")}
+              onClick={(e) => handleNavClick(e, "/cart")}
               className="group relative flex items-center gap-1.5 sm:gap-2.5 rounded-2xl bg-[#7C3AED] px-3 sm:px-5 py-2 sm:py-2.5 text-sm font-bold text-white shadow-xl shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:bg-[#6b1add]"
             >
               <ShoppingCartIcon className="transition-transform group-hover:scale-110" />
@@ -184,7 +175,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={() => handleNavClick(item.href)}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className="flex items-center justify-between py-4 px-5 rounded-2xl text-[16px] font-bold text-slate-800 bg-slate-50/50 border border-transparent hover:border-[#7C3AED]/20 hover:bg-[#7C3AED]/5 hover:text-[#7C3AED] transition-all"
                   style={{ transitionDelay: `${idx * 50}ms` }}
                 >
@@ -202,7 +193,36 @@ export default function Header() {
         )}
       </header>
 
-      {/* YENİ: LOGO ETRAFINDA GERÇEKLEŞEN MİKRO-ANİMASYONLAR */}
+      {/* YENİ: EKRANIN TAM ORTASINDA AÇILAN GECİKMELİ GEÇİŞ EFEKTİ */}
+      {navState !== 'idle' && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/70 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="relative flex items-center justify-center">
+            
+            {/* 1. Logoya doğru küçülen mor enerji dalgası */}
+            {navState === 'loading' && (
+              <div className="absolute w-48 h-48 bg-[#7C3AED]/20 rounded-full pointer-events-none animate-suck-in" />
+            )}
+
+            {/* 2. Dönen cam çember (Loading) / Patlayan Turuncu Çember (Pop) */}
+            <div
+              className={`absolute rounded-full pointer-events-none
+              ${navState === 'loading'
+                  ? 'w-[120%] h-[140%] border border-[#7C3AED]/30 border-t-[#FF7A00] bg-white/40 backdrop-blur-lg animate-spin-glass'
+                  : 'w-[120%] h-[140%] border-4 border-[#FF7A00] animate-pop-ring'
+              }`}
+            />
+
+            {/* Merkezdeki Logo */}
+            <div className={`flex items-center gap-1 relative z-10 ${navState === 'pop' ? 'animate-logo-pop' : ''}`}>
+              <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
+              <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
+              <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED] mt-3">CIM</span>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         @keyframes marquee {
           0% { transform: translateX(0); }
@@ -215,20 +235,20 @@ export default function Header() {
           animation-play-state: paused;
         }
 
-        /* 1. Logoya doğru çekilen enerji dalgası */
+        /* 1. Ekranın dışından Logoya doğru çekilen enerji dalgası */
         @keyframes suck-in {
-          0% { transform: translate(-50%, -50%) scale(8); opacity: 0; }
-          20% { opacity: 0.6; }
-          100% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+          0% { transform: scale(5); opacity: 0; }
+          40% { opacity: 1; }
+          100% { transform: scale(0.2); opacity: 0; }
         }
         .animate-suck-in {
-          animation: suck-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: suck-in 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* 2. Dönen cam çember */
+        /* 2. Etrafta dönen cam/yükleniyor çemberi */
         @keyframes spin-glass {
-          0% { transform: translate(-50%, -50%) rotate(0deg); }
-          100% { transform: translate(-50%, -50%) rotate(360deg); }
+          0% { transform: rotate(0deg) scale(1); }
+          100% { transform: rotate(360deg) scale(1); }
         }
         .animate-spin-glass {
           animation: spin-glass 0.4s linear infinite;
@@ -236,21 +256,21 @@ export default function Header() {
 
         /* 3. Cam çemberin patlayıp yok olması */
         @keyframes pop-ring {
-          0% { transform: translate(-50%, -50%) scale(1); opacity: 1; border-width: 2px; }
-          100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 8px; }
+          0% { transform: scale(1); opacity: 1; border-width: 4px; }
+          100% { transform: scale(1.8); opacity: 0; border-width: 0px; }
         }
         .animate-pop-ring {
-          animation: pop-ring 0.25s ease-out forwards;
+          animation: pop-ring 0.15s ease-out forwards;
         }
 
-        /* 4. Logonun büyüyerek zıplaması */
+        /* 4. Logonun büyüyerek ekrana vurması */
         @keyframes logo-pop {
           0% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          50% { transform: scale(1.15); }
           100% { transform: scale(1); }
         }
         .animate-logo-pop {
-          animation: logo-pop 0.25s ease-out forwards;
+          animation: logo-pop 0.15s ease-out forwards;
         }
       `}</style>
     </>
