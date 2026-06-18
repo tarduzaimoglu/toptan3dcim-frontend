@@ -152,45 +152,49 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 }
 
 export async function getCatalogProducts(): Promise<any[]> {
-  // GÜNCELLEME: bullets ve specs alanları sorguda zorla populate listesine eklendi
-  const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true" +
-               "&populate[0]=image" +
-               "&populate[1]=category_product" +
-               "&populate[2]=variants.VariantImage" +
-               "&populate[3]=bullets" +
-               "&populate[4]=specs";
-               
-  const res = await strapiFetch<any>(path, { revalidate: 0 }); 
-  const items = unwrapCollection(res);
-  return items.map((x: AnyObj) => {
-    const cat = unwrapRelation(x?.category_product);
-    const imgField = x?.image;
-    const imageUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaUrl(m)).filter((u: string | null): u is string => typeof u === "string");
-    const mappedVariants = Array.isArray(x?.variants) 
-      ? x.variants.map((v: any) => ({
-          ColorName: v.ColorName || "",
-          ColorCode: v.ColorCode || "",
-          VariantImage: { url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" } 
-        })).filter((v: any) => v.ColorName !== "")
-      : [];
-      
-    return {
-      id: String(x?.id ?? x?.documentId ?? ""),
-      title: x?.title || x?.Title || "",
-      category: String(cat?.slug ?? ""),
-      featured: !!x?.featured,
-      imageUrls,
-      imageUrl: imageUrls[0] || "",
-      image: imageUrls[0] || "", 
-      wholesalePrice: x?.wholesalePrice ?? x?.WholesalePrice ?? x?.wholesale_price,
-      // GÜNCELLEME: minQty için veritabanı harf/alt çizgi varyasyonlarına karşı koruma eklendi
-      minQty: x?.minQty ?? x?.MinQty ?? x?.min_qty ?? 1,
-      bullets: normalizeStringArray(x?.bullets ?? x?.Bullets),
-      specs: normalizeStringArray(x?.specs ?? x?.Specs),
-      variants: mappedVariants,
-      description: x?.description || x?.Description || ""
-    };
-  });
+  try {
+    // 🛠️ DÜZELTME: Hatalı bullets ve specs populateleri kaldırıldı, orijinal çalışan pathe geri dönüldü.
+    const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true" +
+                 "&populate[0]=image" +
+                 "&populate[1]=category_product" +
+                 "&populate[2]=variants.VariantImage";
+                 
+    const res = await strapiFetch<any>(path, { revalidate: 0 }); 
+    const items = unwrapCollection(res);
+    
+    return items.map((x: AnyObj) => {
+      const cat = unwrapRelation(x?.category_product);
+      const imgField = x?.image;
+      const imageUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaUrl(m)).filter((u: string | null): u is string => typeof u === "string");
+      const mappedVariants = Array.isArray(x?.variants) 
+        ? x.variants.map((v: any) => ({
+            ColorName: v.ColorName || "",
+            ColorCode: v.ColorCode || "",
+            VariantImage: { url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" } 
+          })).filter((v: any) => v.ColorName !== "")
+        : [];
+        
+      return {
+        id: String(x?.id ?? x?.documentId ?? ""),
+        title: x?.title || x?.Title || "",
+        category: String(cat?.slug ?? ""),
+        featured: !!x?.featured,
+        imageUrls,
+        imageUrl: imageUrls[0] || "",
+        image: imageUrls[0] || "", 
+        wholesalePrice: x?.wholesalePrice ?? x?.WholesalePrice ?? x?.wholesale_price,
+        minQty: x?.minQty ?? x?.MinQty ?? x?.min_qty ?? 1,
+        bullets: normalizeStringArray(x?.bullets ?? x?.Bullets),
+        specs: normalizeStringArray(x?.specs ?? x?.Specs),
+        variants: mappedVariants,
+        description: x?.description || x?.Description || ""
+      };
+    });
+  } catch (error) {
+    // 🛠️ GÜVENLİK ÖNLEMİ: Eğer API'de beklenmeyen bir durum olursa sayfa çökmesin, boş liste dönsün
+    console.error("getCatalogProducts runtime hatası:", error);
+    return [];
+  }
 }
 
 export async function getCustomProductTypes(): Promise<any[]> {
