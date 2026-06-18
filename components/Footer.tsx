@@ -1,9 +1,11 @@
 import Link from "next/link";
 
-const ADDRESS_LINE_1 = "Fındıklı Mahallesi, Ermiş Sokak No: 17";
-const ADDRESS_LINE_2 = "Maltepe / İstanbul";
+// GÜNCEL ADRES BİLGİLERİ
+const ADDRESS_LINE_1 = "Acıbadem Mahallesi, Akçaağaç Sokak No: 8";
+const ADDRESS_LINE_2 = "Üsküdar / İstanbul";
 const FULL_ADDRESS = `${ADDRESS_LINE_1} ${ADDRESS_LINE_2}`;
 
+// Google Maps URL güncellemesi
 const MAPS_DIRECTIONS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(FULL_ADDRESS)}`;
 
 export default function Footer() {
@@ -29,11 +31,10 @@ export default function Footer() {
               KesioLabs bünyesinde, işletmeler için yüksek kapasiteli ve kaliteli 3D baskı çözümleri sunuyoruz. Hızlı üretim, uygun maliyet.
             </p>
             
-            {/* Güven Rozeti (B2B için önemli) */}
             <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50">
                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                <div className="text-xs font-semibold text-slate-300">
-                 Türkiye'nin Her Yerine <br/> <span className="text-white">Sigortalı Teslimat</span>
+                  Türkiye'nin Her Yerine <br/> <span className="text-white">Sigortalı Teslimat</span>
                </div>
             </div>
           </div>
@@ -43,15 +44,9 @@ export default function Footer() {
             <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Bize Ulaşın</h4>
             <ul className="space-y-4">
               <li>
-                <a href="tel:+905333839438" className="group flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+                <a href="tel:+905465868005" className="group flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-800 group-hover:bg-[#7F22FE] transition-colors">📞</div>
-                  <span className="text-sm font-medium">0533 383 94 38</span>
-                </a>
-              </li>
-              <li>
-                <a href="tel:+905537538182" className="group flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-800 group-hover:bg-[#7F22FE] transition-colors">📞</div>
-                  <span className="text-sm font-medium">0553 753 81 82</span>
+                  <span className="text-sm font-medium">0546 586 80 05</span>
                 </a>
               </li>
               <li>
@@ -69,14 +64,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* 3. Sütun: Hızlı Menü */}
+          {/* 3. Sütun: Kurumsal */}
           <div>
             <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Kurumsal</h4>
             <ul className="space-y-3">
               {[
                 { name: 'Hakkımızda', href: '/corporate' },
                 { name: 'Gizlilik Politikası', href: '/privacy-policy' },
-                { name: 'Mesafeli Satış Sözleşmesi', href: '/distance-selling' }, // B2B için eklendi
+                { name: 'Mesafeli Satış Sözleşmesi', href: '/distance-selling' },
                 { name: 'Teslimat & İade Koşulları', href: '/delivery-returns' },
                 { name: 'Sık Sorulan Sorular', href: '/faq' },
               ].map((link) => (
@@ -89,7 +84,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* 4. Sütun: Çalışma Saatleri & Sosyal Medya */}
+          {/* 4. Sütun: Çalışma Saatleri */}
           <div>
             <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Çalışma Saatleri</h4>
             <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
@@ -114,22 +109,14 @@ export default function Footer() {
               <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Bizi Takip Edin</span>
             </div>
           </div>
-
         </div>
 
-        {/* Alt Kısım: Telif & Yasal Bilgiler */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-slate-500 text-xs text-center md:text-left">
-            <p>© {new Date().getFullYear()} <span className="text-white font-semibold">KesioLabs</span> Bilişim ve Teknoloji. Tüm hakları saklıdır.</p>
-          </div>
-          
-          <div className="flex items-center gap-4 text-xs text-slate-600">
-             <span>Vergi No: <span className="text-slate-400">Gerekli İse Eklenebilir</span></span>
-             <span>|</span>
-             <span>Mersis No: <span className="text-slate-400">Gerekli İse Eklenebilir</span></span>
-          </div>
+        {/* Alt Kısım: Telif */}
+        <div className="pt-8 text-center md:text-left">
+          <p className="text-slate-500 text-xs">
+            © {new Date().getFullYear()} <span className="text-white font-semibold">KesioLabs</span> Endüstriyel Tasarım ve Üretim. Tüm hakları saklıdır.
+          </p>
         </div>
-
       </div>
     </footer>
   );
