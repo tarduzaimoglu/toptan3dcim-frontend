@@ -44,8 +44,8 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Geçiş efekti durumu
-  const [isNavigating, setIsNavigating] = useState(false);
+  // YENİ: Geçiş animasyonunun evreleri (idle, loading, done)
+  const [navState, setNavState] = useState<'idle' | 'loading' | 'done'>('idle');
   
   const pathname = usePathname();
   const { items } = useCart();
@@ -56,32 +56,31 @@ export default function Header() {
 
   const displayCartCount = cartCount > 99 ? "99+" : cartCount;
 
-  // Scroll durumu
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Sayfa yüklendiğinde geçiş ekranını yumuşakça kapatır
+  // YENİ: Sayfa yüklendiği an "Camı Patlatma (done)" evresine geçer
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsNavigating(false);
-    }, 150); // Çok hızlı yüklenirse ekranda flaş patlamaması için minik bir gecikme
-    return () => clearTimeout(timer);
+    if (navState === 'loading') {
+      setNavState('done');
+      // Cam patlama efekti bittikten sonra idle duruma döner
+      const timer = setTimeout(() => setNavState('idle'), 250);
+      return () => clearTimeout(timer);
+    }
   }, [pathname]);
 
-  // Yeni sayfaya tıklandığında tam ekran animasyonu başlatır
   const handleNavClick = (href: string) => {
     if (pathname !== href && !href.startsWith("http")) {
-      setIsNavigating(true);
+      setNavState('loading');
     }
-    setOpen(false); // Mobilde menüyü kapat
+    setOpen(false);
   };
 
   return (
     <>
-      {/* 1. ÜST DUYURU BANDI (Marquee) */}
       <div className="relative flex overflow-hidden bg-slate-900 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white/90 border-b border-white/10">
         <div className="animate-marquee flex whitespace-nowrap">
           {[...PROMOS, ...PROMOS, ...PROMOS].map((promo, index) => (
@@ -93,7 +92,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 2. ANA NAVİGASYON (Sticky + Glassmorphism) */}
       <header
         className={`sticky top-0 z-50 w-full transition-all duration-500 ${
           isScrolled
@@ -103,10 +101,31 @@ export default function Header() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          <Link href="/" className="group flex items-center gap-0.5 transition-transform hover:scale-105 shrink min-w-0" onClick={() => handleNavClick("/")}>
-            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
-            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
-            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
+          {/* LOGO BÖLÜMÜ - GEÇİŞ EFEKTLERİNİN MERKEZİ */}
+          <Link href="/" className="relative group flex items-center shrink min-w-0 z-50" onClick={() => handleNavClick("/")}>
+            
+            {/* 1. Tıklama Anı: Logoya doğru küçülen mor enerji dalgası */}
+            {navState === 'loading' && (
+              <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-[#7C3AED] rounded-full pointer-events-none animate-suck-in mix-blend-multiply" />
+            )}
+
+            {/* 2. Yükleniyor ve Bitiş: Dönen cam çember ve Patlama */}
+            {(navState === 'loading' || navState === 'done') && (
+              <div
+                className={`absolute top-1/2 left-1/2 w-[110%] h-[140%] sm:w-[105%] sm:h-[130%] rounded-full pointer-events-none
+                ${navState === 'loading'
+                    ? 'border border-[#7C3AED]/40 border-t-[#FF7A00] bg-white/20 backdrop-blur-sm animate-spin-glass'
+                    : 'border-2 border-[#FF7A00] animate-pop-ring'
+                }`}
+              />
+            )}
+
+            {/* Logo Metni (Bitişte Pulse Efekti) */}
+            <div className={`flex items-center gap-0.5 relative z-10 transition-transform ${navState === 'done' ? 'animate-logo-pop' : 'group-hover:scale-105'}`}>
+              <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
+              <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
+              <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
+            </div>
           </Link>
 
           <nav className="hidden md:flex items-center gap-10">
@@ -158,7 +177,6 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobil Menü Paneli */}
         {open && (
           <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto overscroll-contain">
             <nav className="flex flex-col p-6 space-y-2 pb-10">
@@ -184,17 +202,7 @@ export default function Header() {
         )}
       </header>
 
-      {/* YENİ: TAM EKRAN MOR GEÇİŞ EFEKTİ (APP-LIKE EXPERIENCE) */}
-      {isNavigating && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#7C3AED] animate-in fade-in duration-200">
-          <div className="flex items-center gap-1 animate-pulse">
-            <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-white">TOPTAN</span>
-            <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
-            <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-white">CIM</span>
-          </div>
-        </div>
-      )}
-
+      {/* YENİ: LOGO ETRAFINDA GERÇEKLEŞEN MİKRO-ANİMASYONLAR */}
       <style jsx global>{`
         @keyframes marquee {
           0% { transform: translateX(0); }
@@ -205,6 +213,44 @@ export default function Header() {
         }
         .animate-marquee:hover {
           animation-play-state: paused;
+        }
+
+        /* 1. Logoya doğru çekilen enerji dalgası */
+        @keyframes suck-in {
+          0% { transform: translate(-50%, -50%) scale(8); opacity: 0; }
+          20% { opacity: 0.6; }
+          100% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+        }
+        .animate-suck-in {
+          animation: suck-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 2. Dönen cam çember */
+        @keyframes spin-glass {
+          0% { transform: translate(-50%, -50%) rotate(0deg); }
+          100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .animate-spin-glass {
+          animation: spin-glass 0.4s linear infinite;
+        }
+
+        /* 3. Cam çemberin patlayıp yok olması */
+        @keyframes pop-ring {
+          0% { transform: translate(-50%, -50%) scale(1); opacity: 1; border-width: 2px; }
+          100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 8px; }
+        }
+        .animate-pop-ring {
+          animation: pop-ring 0.25s ease-out forwards;
+        }
+
+        /* 4. Logonun büyüyerek zıplaması */
+        @keyframes logo-pop {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+        .animate-logo-pop {
+          animation: logo-pop 0.25s ease-out forwards;
         }
       `}</style>
     </>
