@@ -100,7 +100,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
           {/* ÜST BÖLÜM: YAN YANA GÖRSEL VE TEMEL BİLGİLER */}
           <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start w-full">
             
-            {/* SOL ALAN: GELİŞMİŞ GALERİ DÜZENİ (Çerçeve Radiusları Kaldırıldı) */}
+            {/* SOL ALAN: GELİŞMİŞ GALERİ DÜZENİ (Keskin Köşeler) */}
             <div className="w-full md:w-1/2 flex flex-row items-start gap-3 shrink-0">
               
               {/* Büyük Ana Görsel Çerçevesi */}
@@ -127,7 +127,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
                   style={{ backgroundImage: `url(${activeImg})`, backgroundPosition: `${origin.x}% ${origin.y}%`, backgroundSize: '220%' }} />
               )}
 
-              {/* SAĞ TARAF: BÜYÜTÜLMÜŞ KÜÇÜK RESİMLER SÜTUNU (Grid Yapısı + Sütun Genişletildi) */}
+              {/* SAĞ TARAF: BÜYÜTÜLMÜŞ KÜÇÜK RESİMLER SÜTUNU */}
               {allImages.length > 1 && (
                 <div 
                   className={`shrink-0 w-16 sm:w-24 flex flex-col gap-2 ${
@@ -151,7 +151,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
               )}
             </div>
 
-            {/* SAĞ ALAN: TEMEL ÜRÜN BİLGİLERİ (BAŞLIK, FİYAT, RENKLER, MADDELER) */}
+            {/* SAĞ ALAN: TEMEL ÜRÜN BİLGİLERİ */}
             <div className="w-full md:w-1/2 flex flex-col">
               <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2 pr-8">{product.title}</h2>
               
@@ -182,7 +182,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
                 </div>
               )}
 
-              {/* Öne Çıkan Özellikler (Maddeler) */}
+              {/* Öne Çıkan Özellikler */}
               {p.bullets && p.bullets.length > 0 && (
                 <div>
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2.5 block">Öne Çıkan Özellikler</label>
@@ -196,13 +196,13 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             </div>
           </div>
 
-          {/* ✅ ALT BÖLÜM: PANEL BOYUNCA SOLA UZANAN GENİŞ AÇIKLAMA VE TEKNİK ÖZELLİKLER */}
+          {/* ✅ ALT BÖLÜM: PANEL GEOMETRİSİ BOYUNCA SAĞA VE SOLA UZANAN TAM GENİŞLİK ALANI */}
           <div className="mt-8 pt-6 border-t border-slate-100 w-full flex flex-col gap-6">
             
-            {/* Ürün Açıklaması (Full Width) */}
+            {/* Ürün Açıklaması (max-w-none eklendi, artık alanı tamamen kaplar) */}
             <div className="w-full">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Ürün Açıklaması</label>
-              <div className={`prose prose-sm text-xs sm:text-sm text-gray-600 transition-all duration-300 ${!isExpanded ? "line-clamp-3" : ""}`}>
+              <div className={`prose prose-sm max-w-none text-xs sm:text-sm text-gray-600 transition-all duration-300 ${!isExpanded ? "line-clamp-3" : ""}`}>
                 {descriptionParagraphs.map((p, i) => <p key={i} className="mb-1">{p}</p>)}
               </div>
               {isLongDescription && (
@@ -215,7 +215,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
               )}
             </div>
 
-            {/* Teknik Özellikler Tablosu/Kutusu (Full Width) */}
+            {/* Teknik Özellikler (max-w-none mantığıyla tam genişlik 2'li grid) */}
             {p.specs && p.specs.length > 0 && (
               <div className="w-full">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Teknik Özellikler</label>
@@ -259,7 +259,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
 
       </div>
 
-      {/* TAM EKRAN GÖRSEL İNCELEME MODU (LIGHTBOX) */}
+      {/* TAM EKRAN LIGHTBOX */}
       {isLightboxOpen && (
         <div className="fixed inset-0 z-[10000] bg-slate-950/95 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="absolute inset-0" onClick={() => setIsLightboxOpen(false)} />
