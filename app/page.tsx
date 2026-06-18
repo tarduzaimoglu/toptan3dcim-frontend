@@ -1,41 +1,35 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// "force-dynamic" ve "revalidate = 0" satırlarını sildik.
+// ISR (Incremental Static Regeneration) sayesinde sayfa sunucuda hazır bekler.
+export const revalidate = 3600; // Sayfa 1 saatte bir arka planda güncellenir.
 
 import HeroBanner from "@/components/HeroBanner";
 import ProductCarousel from "@/components/ProductCarousel";
 import { getCatalogProducts } from "@/lib/strapi";
 
-// Bannerları çekmek için yerel fonksiyon (Mevcut yapına göre)
 async function getBanners() {
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
   try {
-    const res = await fetch(`${STRAPI_URL}/api/banners2?populate=*`, { cache: 'no-store' });
+    // cache: 'force-cache' ekleyerek sunucunun veriyi önbelleğe almasını sağlıyoruz
+    const res = await fetch(`${STRAPI_URL}/api/banners2?populate=*`, { next: { revalidate: 3600 } });
     const json = await res.json();
     return json.data || [];
   } catch (error) {
-    console.error("Banner çekme hatası:", error);
     return [];
   }
 }
 
-// Diziyi karıştırmak için güvenli fonksiyon
-function shuffleArray(array: any[]) {
-  if (!Array.isArray(array)) return [];
-  return [...array].sort(() => Math.random() - 0.5);
-}
-
 export default async function HomePage() {
-  // Verileri çekiyoruz
+  // Promise.all ile veriler eşzamanlı çekilir
   const [banners, allProducts] = await Promise.all([
     getBanners(),
     getCatalogProducts(),
   ]);
 
-  // Hata aldığın nokta: allProducts dizi değilse boş dizi ata
   const safeProducts = Array.isArray(allProducts) ? allProducts : [];
   
-  // Ürünleri karıştır
-  const randomProducts = shuffleArray(safeProducts);
+  // ÖNEMLİ: Statik sayfalarda Math.random() kullanmak hydration hatası verebilir.
+  // Bu yüzden rastgeleliği sunucuda yapıp sayfayı statik olarak donduruyoruz.
+  const randomProducts = [...safeProducts].sort(() => Math.random() - 0.5);
 
   return (
     <main className="min-h-screen bg-white">
@@ -43,9 +37,6 @@ export default async function HomePage() {
         <HeroBanner banners={banners} />
       </section>
 
-      {/* Kırpılmayı önlemek için dikey boşluk (py-24) 
-          ve Swiper'ın dışarı taşmasına izin veren overflow-visible 
-      */}
       <section className="py-24 overflow-visible relative">
         <div className="container mx-auto px-4 overflow-visible">
           <header className="mb-16 text-center">
@@ -66,13 +57,10 @@ export default async function HomePage() {
           )}
           
           <div className="text-center mt-20">
-  <a 
-    href="/products" 
-    className="inline-flex items-center justify-center px-12 py-4 bg-slate-900 text-white rounded-full font-bold text-sm tracking-widest hover:bg-[#7C3AED] transition-all duration-300 shadow-xl"
-  >
-    TÜM KATALOĞU KEŞFET
-  </a>
-</div>
+            <a href="/products" className="inline-flex items-center justify-center px-12 py-4 bg-slate-900 text-white rounded-full font-bold text-sm tracking-widest hover:bg-[#7C3AED] transition-all duration-300 shadow-xl">
+              TÜM KATALOĞU KEŞFET
+            </a>
+          </div>
         </div>
       </section>
     </main>
