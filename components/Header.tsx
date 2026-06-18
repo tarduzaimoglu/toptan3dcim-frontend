@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // ✅ useSearchParams silindi
 import { useCart } from "@/components/cart/CartContext"; 
 
 const navItems = [
@@ -48,7 +48,6 @@ export default function Header() {
   const [navState, setNavState] = useState<'idle' | 'active' | 'leaving'>('idle');
   
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { items } = useCart();
 
@@ -74,11 +73,11 @@ export default function Header() {
     // 1. Ekranı anında Mor Buzlu Cam ile kapla ve animasyonu başlat
     setNavState('active');
 
-    // 2. Beklemeden ARKA PLANDA Next.js'e yeni sayfayı yüklemesini söyle (İstediğin detay!)
+    // 2. Beklemeden ARKA PLANDA Next.js'e yeni sayfayı yüklesin
     router.push(href);
   };
 
-  // Yeni sayfa arka planda başarıyla yüklendiğinde (pathname veya URL parametresi değiştiğinde) tetiklenir
+  // Yeni sayfa arka planda başarıyla yüklendiğinde (pathname değiştiğinde) tetiklenir
   useEffect(() => {
     if (navState === 'active') {
       // Sayfa arka planda yüklendi! Animasyonun tadını çıkarmak için minik bir 600ms bekletiyoruz
@@ -91,7 +90,7 @@ export default function Header() {
       
       return () => clearTimeout(timer);
     }
-  }, [pathname, searchParams]); // Sayfa yolu veya parametresi değiştiğinde çalışır
+  }, [pathname]); // ✅ searchParams bağımlılığı kaldırıldı, build hatası çözüldü!
 
   return (
     <>
@@ -192,7 +191,7 @@ export default function Header() {
         )}
       </header>
 
-      {/* YENİ: SİTE MORU BUZLU CAM VE DALGALANAN HAREKETLİ LOGO GEÇİŞİ */}
+      {/* SİTE MORU BUZLU CAM VE DALGALANAN HAREKETLİ LOGO GEÇİŞİ */}
       {navState !== 'idle' && (
         <div 
           className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-400 ease-in-out
@@ -200,10 +199,9 @@ export default function Header() {
             ? 'opacity-100 bg-[#7C3AED]/80 backdrop-blur-2xl' 
             : 'opacity-0 bg-[#7C3AED]/0 backdrop-blur-none'}`}
         >
-          {/* Logo Konteyneri: Önce "Pop" diye belirir, sonra "Glow" ile parlar */}
+          {/* Logo Konteyneri */}
           <div className="flex items-center gap-1 md:gap-1.5 relative z-10 animate-pop-in drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]">
             
-            {/* TOPTAN (Gecikmesiz dalgalanır) - Renk: Beyaz */}
             <span 
               className="text-4xl sm:text-6xl font-black italic tracking-tighter text-white animate-float-wave" 
               style={{ animationDelay: '0s' }}
@@ -211,7 +209,6 @@ export default function Header() {
               TOPTAN
             </span>
             
-            {/* 3D (0.15s Gecikmeli dalgalanır) - Renk: Turuncu */}
             <span 
               className="text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FF7A00] animate-float-wave drop-shadow-[0_0_20px_rgba(255,122,0,0.5)]" 
               style={{ animationDelay: '0.15s' }}
@@ -219,7 +216,6 @@ export default function Header() {
               3D
             </span>
             
-            {/* CIM (0.3s Gecikmeli dalgalanır) - Renk: Beyaz */}
             <span 
               className="text-2xl sm:text-4xl font-black italic tracking-tighter text-white mt-3 sm:mt-5 animate-float-wave" 
               style={{ animationDelay: '0.3s' }}
@@ -243,7 +239,7 @@ export default function Header() {
           animation-play-state: paused;
         }
 
-        /* LOGO BELİRME EFEKTİ (Ekrandan yüzeye çıkar gibi büyür) */
+        /* LOGO BELİRME EFEKTİ */
         @keyframes pop-in {
           0% { transform: scale(0.6); opacity: 0; }
           60% { transform: scale(1.08); opacity: 1; }
@@ -253,7 +249,7 @@ export default function Header() {
           animation: pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* DALGALANMA / UZAYDA SÜZÜLME EFEKTİ (Sürekli Çalışır) */
+        /* DALGALANMA / UZAYDA SÜZÜLME EFEKTİ */
         @keyframes float-wave {
           0%, 100% { transform: translateY(0px) scale(1); }
           50% { transform: translateY(-12px) scale(1.02); }
