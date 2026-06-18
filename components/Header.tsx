@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation"; // ✅ useSearchParams tamamen kaldırıldı
+import { usePathname, useRouter } from "next/navigation"; 
 import { useCart } from "@/components/cart/CartContext"; 
 
 const navItems = [
@@ -44,8 +44,8 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Evreler: idle (gizli) -> active (mor cam ve dalgalı logo) -> leaving (sayfa değişti, eriyip kayboluyor)
-  const [navState, setNavState] = useState<'idle' | 'active' | 'leaving'>('idle');
+  // Evreler: idle -> active (iç sayfa mor geçiş) -> leaving -> kesio (Kesiolabs endüstriyel geçiş)
+  const [navState, setNavState] = useState<'idle' | 'active' | 'leaving' | 'kesio'>('idle');
   
   const pathname = usePathname();
   const router = useRouter();
@@ -64,7 +64,22 @@ export default function Header() {
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (pathname === href || href.startsWith("http")) return; 
+    if (pathname === href) return; 
+
+    // 🛠️ KESIOLABS INTERCEPT: Eğer link dış bağlantı Kesiolabs ise özel teknoloji portalı geçişini tetikle
+    if (href.includes("kesiolabs.com")) {
+      e.preventDefault();
+      setOpen(false);
+      setNavState('kesio');
+      
+      // Kullanıcının sinematik marka geçişini deneyimlemesi için 1.2 saniye (1200ms) bekletip yönlendiriyoruz
+      setTimeout(() => {
+        window.location.href = href;
+      }, 1200);
+      return;
+    }
+    
+    if (href.startsWith("http")) return; // Farklı bir dış link senaryosu için koruma
     
     e.preventDefault(); 
     setOpen(false); 
@@ -77,13 +92,12 @@ export default function Header() {
     if (navState === 'active') {
       const timer = setTimeout(() => {
         setNavState('leaving'); 
-        
         setTimeout(() => setNavState('idle'), 400); 
       }, 600); 
       
       return () => clearTimeout(timer);
     }
-  }, [pathname]); // ✅ searchParams bağımlılığı ve tanımı kaldırılarak build hatası çözüldü
+  }, [pathname, navState]);
 
   return (
     <>
@@ -184,41 +198,76 @@ export default function Header() {
         )}
       </header>
 
-      {/* SİTE MORU BUZLU CAM VE DALGALANAN HAREKETLİ LOGO GEÇİŞİ */}
-      {navState !== 'idle' && (
+      {/* TOPTAN3DCIM İÇ SAYFA GEÇİŞ EKRANI */}
+      {navState === 'active' && (
         <div 
-          className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-400 ease-in-out
-          ${navState === 'active' 
-            ? 'opacity-100 bg-[#7C3AED]/80 backdrop-blur-2xl' 
-            : 'opacity-0 bg-[#7C3AED]/0 backdrop-blur-none'}`}
+          className="fixed inset-0 z-[9999] flex items-center justify-center opacity-100 bg-[#7C3AED]/80 backdrop-blur-2xl transition-all duration-400"
         >
-          {/* Logo Konteyneri */}
           <div className="flex items-center gap-1 md:gap-1.5 relative z-10 animate-pop-in drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]">
+            <span className="inline-block pr-2 text-4xl sm:text-6xl font-black italic tracking-tighter text-white animate-float-wave" style={{ animationDelay: '0s' }}>TOPTAN</span>
+            <span className="inline-block pr-1.5 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FF7A00] animate-float-wave drop-shadow-[0_0_20px_rgba(255,122,0,0.5)]" style={{ animationDelay: '0.15s' }}>3D</span>
+            <span className="inline-block pr-2 text-2xl sm:text-4xl font-black italic tracking-tighter text-white mt-3 sm:mt-5 animate-float-wave" style={{ animationDelay: '0.3s' }}>CIM</span>
+          </div>
+        </div>
+      )}
+
+      {/* ERİYEREK GEÇİŞ YAPMA EFEKTİ (LEAVING) */}
+      {navState === 'leaving' && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center opacity-0 bg-[#7C3AED]/0 backdrop-blur-none transition-all duration-400">
+          <div className="flex items-center gap-1 md:gap-1.5 relative z-10 opacity-0 transition-opacity duration-300">
+            <span className="text-4xl sm:text-6xl font-black italic text-white">TOPTAN</span>
+            <span className="text-4xl sm:text-6xl font-black italic text-[#FF7A00]">3D</span>
+            <span className="text-2xl sm:text-4xl font-black italic text-white mt-5">CIM</span>
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 KESIOLABS GÜVENLİ DIŞ BAĞLANTI GEÇİŞ EKRANI (1200ms) */}
+      {navState === 'kesio' && (
+        <div 
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0B132B]/90 backdrop-blur-3xl animate-in fade-in duration-300"
+        >
+          <div className="text-center flex flex-col items-center gap-6 max-w-md px-6 animate-pop-in">
             
-            {/* ✅ inline-block ve pr-2 eklendi (N harfinin kesilmesi önlendi) */}
-            <span 
-              className="inline-block pr-2 text-4xl sm:text-6xl font-black italic tracking-tighter text-white animate-float-wave" 
-              style={{ animationDelay: '0s' }}
-            >
-              TOPTAN
-            </span>
-            
-            {/* ✅ inline-block ve pr-1.5 eklendi (D harfinin kesilmesi önlendi) */}
-            <span 
-              className="inline-block pr-1.5 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FF7A00] animate-float-wave drop-shadow-[0_0_20px_rgba(255,122,0,0.5)]" 
-              style={{ animationDelay: '0.15s' }}
-            >
-              3D
-            </span>
-            
-            {/* ✅ inline-block ve pr-2 eklendi (M harfinin kesilmesi önlendi) */}
-            <span 
-              className="inline-block pr-2 text-2xl sm:text-4xl font-black italic tracking-tighter text-white mt-3 sm:mt-5 animate-float-wave" 
-              style={{ animationDelay: '0.3s' }}
-            >
-              CIM
-            </span>
-            
+            {/* Üst Bağlantı Köprüsü Sinyali */}
+            <div className="flex items-center gap-3 opacity-60 text-white text-[10px] tracking-widest uppercase font-black">
+              <span>TOPTAN3DCİM</span>
+              <svg className="w-4 h-4 animate-pulse text-[#FF7A00]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+              <span>KESIOLABS</span>
+            </div>
+
+            {/* Kesiolabs Orijinal Logotür Canlandırması */}
+            <div className="flex items-center relative z-10 drop-shadow-[0_0_35px_rgba(0,195,255,0.3)]">
+              {/* KESIO - Turkuaz / Siyan - pr-1.5 Kesilme Koruması */}
+              <span 
+                className="inline-block pr-1.5 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#00C3FF] username animate-float-wave"
+                style={{ animationDelay: '0s' }}
+              >
+                KESIO
+              </span>
+              {/* L - Turuncu - pr-1 Kesilme Koruması */}
+              <span 
+                className="inline-block pr-1 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FFA500] animate-float-wave drop-shadow-[0_0_15px_rgba(255,165,0,0.4)]"
+                style={{ animationDelay: '0.15s' }}
+              >
+                L
+              </span>
+              {/* ABS - Derin Canlı Mavi - pr-2 Kesilme Koruması */}
+              <span 
+                className="inline-block pr-2 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#2266FF] animate-float-wave"
+                style={{ animationDelay: '0.3s' }}
+              >
+                ABS
+              </span>
+            </div>
+
+            {/* Endüstriyel Bilgilendirme Altyazısı */}
+            <p className="text-xs sm:text-sm text-slate-300/80 font-bold leading-relaxed max-w-xs animate-pulse">
+              Endüstriyel imalat ve ileri seviye 3D modelleme sipariş portalına güvenli geçiş yapılıyor...
+            </p>
+
           </div>
         </div>
       )}
