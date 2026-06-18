@@ -8,7 +8,7 @@ import { CART_MIN_QTY } from "@/components/cart/CartContext";
 import ProductFilter from "@/components/products/ProductFilter";
 
 // ProductExpandPanel yolunu kendi projene göre ayarla:
-import { ProductExpandPanel } from "./ProductExpandPanel"; 
+import { ProductExpandPanel } from "@/components/products/ProductExpandPanel"; 
 
 type Product = any;
 type Category = { key: string; label: string };
