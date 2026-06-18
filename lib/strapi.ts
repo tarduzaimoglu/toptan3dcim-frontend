@@ -22,21 +22,6 @@ function unwrapRelation(rel: any) {
   return unwrapEntity(rel);
 }
 
-export function buildQuery(params: Record<string, any>) {
-  const sp = new URLSearchParams();
-  const add = (key: string, val: any) => {
-    if (val === undefined || val === null || val === "") return;
-    sp.set(key, String(val));
-  };
-  if (params.filters?.slug?.$eq) add("filters[slug][$eq]", params.filters.slug.$eq);
-  if (params.filters?.category?.slug?.$eq) add("filters[category][slug][$eq]", params.filters.category.slug.$eq);
-  if (Array.isArray(params.sort)) params.sort.forEach((s: string, i: number) => add(`sort[${i}]`, s));
-  if (params.pagination?.pageSize) add("pagination[pageSize]", params.pagination.pageSize);
-  
-  const q = sp.toString();
-  return q ? `?${q}` : "";
-}
-
 export async function strapiFetch<T>(path: string, init?: RequestInit & { revalidate?: number }): Promise<T> {
   const url = `${STRAPI_URL}${path}`;
   const headers = new Headers(init?.headers);
@@ -107,12 +92,43 @@ export async function getCatalogProducts(): Promise<any[]> {
   });
 }
 
+export async function getCatalogCategories(): Promise<{ key: string; label: string }[]> {
+  const path = "/api/category-products?sort=order:asc&filters[isActive][$eq]=true&fields[0]=slug&fields[1]=title";
+  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  const items = unwrapCollection(res);
+  return items.map((x: AnyObj) => ({
+    key: String(x?.slug ?? x?.id ?? ""),
+    label: String(x?.title ?? x?.slug ?? "Kategori"),
+  })).filter((x: any) => Boolean(x.key && x.label));
+}
+
+export async function getBlogPosts() {
+  const path = `/api/blog-posts?fields[0]=Slug&fields[1]=updatedAt&pagination[pageSize]=100`;
+  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  const items = unwrapCollection(res);
+  return items.map((x: any) => ({ slug: x.Slug || x.slug, updatedAt: x.updatedAt }));
+}
+
+export async function getPostBySlug(slug: string) {
+  const path = `/api/blog-posts?filters[Slug][$eq]=${slug}&populate=*`;
+  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  const items = unwrapCollection(res);
+  const x = items?.[0];
+  if (!x) return null;
+  return {
+    id: x.id,
+    title: x.Title || x.title,
+    content: x.Content || x.content,
+    summary: x.Summary || x.summary,
+    coverImage: getMediaUrl(x.CoverImage || x.coverImage),
+    seo: { metaTitle: x.seo?.metaTitle || x.Title || x.title, metaDescription: x.seo?.metaDescription || x.Summary || x.summary }
+  };
+}
+
 function normalizeStringArray(input: any): string[] {
   if (!input) return [];
   let data = input;
-  if (typeof data === "string") {
-    try { data = JSON.parse(data); } catch { }
-  }
+  if (typeof data === "string") { try { data = JSON.parse(data); } catch { } }
   if (Array.isArray(data) && data.some(item => item && typeof item === "object")) {
     let extractedText = "";
     const extractRecursively = (node: any) => {
