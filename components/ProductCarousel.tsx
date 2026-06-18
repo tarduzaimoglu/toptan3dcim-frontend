@@ -16,6 +16,7 @@ function resolveThumbSrc(product: any) {
   const target = product.attributes || product;
   const raw = (typeof target?.imageUrl === "string" && target.imageUrl.trim() && target.imageUrl) ||
               (typeof target?.image === "string" && target.image.trim() && target.image);
+
   return raw || "/products/placeholder.png";
 }
 
@@ -23,7 +24,7 @@ export default function ProductCarousel({ products }: { products: any[] }) {
   if (!products || products.length === 0) return null;
 
   return (
-    <div className="w-full relative overflow-visible py-10">
+    <div className="w-full relative overflow-visible">
       <Swiper
         effect={"coverflow"}
         grabCursor={true}
@@ -52,12 +53,12 @@ export default function ProductCarousel({ products }: { products: any[] }) {
           const price = attr.wholesalePrice || attr.WholesalePrice || attr.price || attr.Price || "0";
 
           return (
-            <SwiperSlide key={item.id} className="!overflow-visible">
-              {/* Kartı bir Link ile sarmalayarak tüm alanı tıklanabilir yapıyoruz */}
+            <SwiperSlide key={item.id} className="!overflow-visible py-10">
+              {/* EKLENDİ: Ürüne tıklayınca /products sayfasına open parametresiyle gider */}
               <Link href={`/products?open=${item.id}`} className="block h-full">
                 <div className="relative group bg-white rounded-3xl border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 h-full flex flex-col overflow-hidden">
                   
-                  {/* Görsel Alanı */}
+                  {/* MODERN KART TASARIMI */}
                   <div className="relative aspect-[4/5] w-full overflow-hidden bg-white">
                     <Image
                       src={imgSrc}
@@ -68,7 +69,6 @@ export default function ProductCarousel({ products }: { products: any[] }) {
                     />
                   </div>
                   
-                  {/* Bilgi Alanı */}
                   <div className="p-4 text-center border-t border-slate-50 bg-slate-50/50">
                     <h3 className="text-xs md:text-sm font-bold text-slate-900 line-clamp-1 mb-1">
                       {attr.title || attr.Title}
@@ -78,6 +78,7 @@ export default function ProductCarousel({ products }: { products: any[] }) {
                       <span className="text-slate-400 font-normal">/ Adet</span>
                     </div>
                   </div>
+
                 </div>
               </Link>
             </SwiperSlide>
@@ -88,19 +89,19 @@ export default function ProductCarousel({ products }: { products: any[] }) {
       <style jsx global>{`
         .product-slider.swiper { 
           overflow: visible !important; 
+          padding-top: 50px;
+          padding-bottom: 50px;
         }
         .product-slider .swiper-slide {
           opacity: 0.3;
           transform: scale(0.8);
           transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
+          z-index: 1;
         }
         .product-slider .swiper-slide-active {
           opacity: 1;
           transform: scale(1.05);
-        }
-        /* Dokunmatik ekranlarda focus halkasını gizle */
-        .product-slider .swiper-slide a:focus {
-          outline: none;
+          z-index: 50;
         }
       `}</style>
     </div>
