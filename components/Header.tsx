@@ -9,7 +9,7 @@ const navItems = [
   { label: "Anasayfa", href: "/" },
   { label: "Ürün Kataloğu", href: "/products" },
   { label: "Özel Sipariş", href: "https://kesiolabs.com/quote" },
-  { label: "İletişim", href: "https://wa.me/905465868005" },
+  { label: "İletişim", href: "/contact" },
 ];
 
 const PROMOS = [
