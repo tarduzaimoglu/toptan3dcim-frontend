@@ -29,7 +29,7 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   const [zoomOn, setZoomOn] = useState(false);
   const [origin, setOrigin] = useState({ x: 50, y: 50 });
   
-  // YENİ: Açıklama metni için state
+  // Açıklama metni için state
   const [isExpanded, setIsExpanded] = useState(false);
 
   // --- HIZLANDIRMA: VARYANT ÖN YÜKLEME ---
@@ -51,7 +51,6 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   const minQty = Number(p.minQty || p.minQtyText || CART_MIN_QTY);
   const descriptionParagraphs = useMemo(() => parseDescription(p.description), [p.description]);
   
-  // Metin yeterince uzun mu kontrolü (Sadece uzun metinlerde butonu gösteririz)
   const isLongDescription = descriptionParagraphs.join(" ").length > 150;
 
   const onAdd = () => {
@@ -105,7 +104,16 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
         {/* SAĞ: BİLGİLER ALANI */}
         <div className="w-full md:w-1/2 flex flex-col p-6 md:p-10 md:overflow-y-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{product.title}</h2>
-          <div className="text-2xl font-black text-[#FF5733] mb-6">{unitPrice} TL <span className="text-sm text-gray-400 font-normal">/ adet</span></div>
+          
+          {/* DÜZELTME: Fiyatın yanına esnek, "12 Adet / Min" dynamic rozeti yerleştirildi */}
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
+            <span className="text-2xl font-black text-[#FF5733]">
+              {unitPrice} TL <span className="text-sm text-gray-400 font-normal">/ adet</span>
+            </span>
+            <span className="text-xs md:text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60 shadow-sm">
+              {minQty} Adet / Min
+            </span>
+          </div>
 
           {/* Renk Seçenekleri */}
           {p.variants?.length > 0 && (
@@ -121,8 +129,21 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
             </div>
           )}
 
-          {/* YENİ: Kısaltılmış Metin Yapısı */}
+          {/* GÜNCELLEME: Strapi'den gelen Bullets (Öne Çıkan Özellikler) Listesi */}
+          {p.bullets && p.bullets.length > 0 && (
+            <div className="mb-6">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2.5 block">Öne Çıkan Özellikler</label>
+              <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1.5 font-medium">
+                {p.bullets.map((bullet: string, i: number) => (
+                  <li key={i} className="marker:text-[#FF5733]">{bullet}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Kısaltılmış Metin Yapısı (Açıklama) */}
           <div className="mb-6">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Ürün Açıklaması</label>
             <div className={`prose prose-sm text-gray-600 transition-all duration-300 ${!isExpanded ? "line-clamp-3" : ""}`}>
               {descriptionParagraphs.map((p, i) => <p key={i}>{p}</p>)}
             </div>
@@ -135,6 +156,22 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
               </button>
             )}
           </div>
+
+          {/* GÜNCELLEME: Strapi'den gelen Specs (Teknik Detaylar) Kutusu */}
+          {p.specs && p.specs.length > 0 && (
+            <div className="mb-6">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2.5 block">Teknik Özellikler</label>
+              <div className="grid grid-cols-1 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs text-slate-600 font-medium shadow-inner">
+                {p.specs.map((spec: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-[#FF5733] font-bold select-none">•</span>
+                    <span>{spec}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
         </div>
       </div>
 
