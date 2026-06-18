@@ -16,7 +16,8 @@
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "swiper": "^12.1.4"
+    "swiper": "^12.1.4",
+    "nodemailer": "^6.9.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
