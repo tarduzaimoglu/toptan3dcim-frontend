@@ -42,10 +42,17 @@ export async function strapiFetch<T>(path: string, init?: RequestInit & { revali
   const headers = new Headers(init?.headers);
   if (STRAPI_TOKEN) headers.set("Authorization", `Bearer ${STRAPI_TOKEN}`);
 
+  const revalidateVal = init?.revalidate ?? CACHE_REVALIDATE;
+  const { next, ...restInit } = init || {};
+
+  // GÜNCELLEME: Eğer revalidate 0 ise Next.js'e veriyi asla önbelleğe almamasını söylüyoruz (Zorunlu taze veri)
   const res = await fetch(url, {
-    ...init,
+    ...restInit,
     headers,
-    next: { revalidate: init?.revalidate ?? CACHE_REVALIDATE },
+    ...(revalidateVal === 0 
+      ? { cache: "no-store" } 
+      : { next: { revalidate: revalidateVal } }
+    ),
   });
 
   if (!res.ok) {
@@ -137,7 +144,8 @@ function normalizeStringArray(input: any): string[] {
 
 export async function getCatalogCategories(): Promise<{ key: string; label: string }[]> {
   const path = "/api/category-products?sort=order:asc&filters[isActive][$eq]=true&fields[0]=slug&fields[1]=title";
-  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  // GÜNCELLEME: revalidate değerini 0 yaptık, kategoriler anlık güncellenir
+  const res = await strapiFetch<any>(path, { revalidate: 0 }); 
   const items = unwrapCollection(res);
   return items.map((x: AnyObj) => ({
     key: String(x?.slug ?? x?.id ?? ""),
@@ -147,7 +155,8 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
 
 export async function getCatalogProducts(): Promise<any[]> {
   const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
-  const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
+  // GÜNCELLEME: revalidate değerini 0 yaptık, yeni yüklenen ürünler ANINDA listelenir
+  const res = await strapiFetch<any>(path, { revalidate: 0 }); 
   const items = unwrapCollection(res);
   return items.map((x: AnyObj) => {
     const cat = unwrapRelation(x?.category_product);
