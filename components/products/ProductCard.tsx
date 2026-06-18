@@ -42,7 +42,6 @@ function getClosestStandardColorId(hex: string) {
   return closestId;
 }
 
-// Orijinal görsel bulucu
 function resolveThumbSrc(product: any) {
   const raw =
     (typeof product?.imageUrl === "string" && product.imageUrl.trim() && product.imageUrl) ||
@@ -57,30 +56,26 @@ type Props = {
   isOpen?: boolean;
   qtyText?: string;
   setQtyText?: (v: string) => void;
-  selectedColors?: string[]; // YENİ: Filtreden gelen seçili renkler
+  selectedColors?: string[]; 
 };
 
 export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Props) {
   
-  // YENİ: Eğer filtreden renk seçildiyse ve üründe o renk varsa görseli değiştir
   const displayImageSrc = useMemo(() => {
     const prodAny = product as any;
 
     if (selectedColors.length > 0 && prodAny.variants && Array.isArray(prodAny.variants)) {
-      // Ürünün varyantları içinde, seçili renklere uyan ilk varyantı bul
       const matchingVariant = prodAny.variants.find((v: any) => {
         if (!v.ColorCode || !v.VariantImage?.url) return false;
         const stdColorId = getClosestStandardColorId(v.ColorCode);
         return selectedColors.includes(stdColorId);
       });
 
-      // Eşleşen varyantın görseli varsa onu döndür
       if (matchingVariant) {
         return matchingVariant.VariantImage.url;
       }
     }
     
-    // Eşleşme yoksa veya renk seçilmediyse standart görseli döndür
     return resolveThumbSrc(prodAny);
   }, [product, selectedColors]);
 
@@ -93,9 +88,11 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
     return product.wholesalePriceText ?? `${unitPrice} TL/adet`;
   }, [product.wholesalePriceText, unitPrice]);
 
-  const minQtyText = useMemo(() => {
-    return product.minQtyText ?? `${CART_MIN_QTY}`;
-  }, [product.minQtyText]);
+  // 🛠️ DÜZELTME: Artık eski minQtyText yerine doğrudan Strapi'den gelen sayısal minQty değerini okuyoruz
+  const minQtyValue = useMemo(() => {
+    const mq = (product as any).minQty;
+    return mq !== undefined && mq !== null ? String(mq) : `${CART_MIN_QTY}`;
+  }, [product]);
 
   const tag = useMemo(() => {
     const t = (product as any)?.badge ?? (product as any)?.tag ?? (product as any)?.categoryTitle;
@@ -140,7 +137,8 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
           <div className="mt-2 flex items-end justify-between gap-3">
             <div className="text-[13px] font-semibold text-slate-900">{priceText}</div>
             <div className="text-[11px] text-slate-500">
-              Min. <span className="font-semibold text-slate-700">{minQtyText}</span>
+              {/* 🛠️ DÜZELTME: Değişken minQtyValue olarak güncellendi */}
+              Min. <span className="font-semibold text-slate-700">{minQtyValue}</span>
             </div>
           </div>
 
