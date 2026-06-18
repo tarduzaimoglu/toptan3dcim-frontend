@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation"; // ✅ useSearchParams silindi
+import { usePathname, useRouter } from "next/navigation"; // ✅ useSearchParams tamamen kaldırıldı
 import { useCart } from "@/components/cart/CartContext"; 
 
 const navItems = [
@@ -64,33 +64,26 @@ export default function Header() {
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // Aynı sayfaya tıklanırsa işlem yapma
     if (pathname === href || href.startsWith("http")) return; 
     
     e.preventDefault(); 
     setOpen(false); 
     
-    // 1. Ekranı anında Mor Buzlu Cam ile kapla ve animasyonu başlat
     setNavState('active');
-
-    // 2. Beklemeden ARKA PLANDA Next.js'e yeni sayfayı yüklesin
     router.push(href);
   };
 
-  // Yeni sayfa arka planda başarıyla yüklendiğinde (pathname değiştiğinde) tetiklenir
   useEffect(() => {
     if (navState === 'active') {
-      // Sayfa arka planda yüklendi! Animasyonun tadını çıkarmak için minik bir 600ms bekletiyoruz
       const timer = setTimeout(() => {
-        setNavState('leaving'); // Cam yavaşça erimeye başlar
+        setNavState('leaving'); 
         
-        // CSS kaybolma süresi bittiğinde tamamen ekrandan kaldır
         setTimeout(() => setNavState('idle'), 400); 
       }, 600); 
       
       return () => clearTimeout(timer);
     }
-  }, [pathname]); // ✅ searchParams bağımlılığı kaldırıldı, build hatası çözüldü!
+  }, [pathname]); // ✅ searchParams bağımlılığı ve tanımı kaldırılarak build hatası çözüldü
 
   return (
     <>
@@ -202,22 +195,25 @@ export default function Header() {
           {/* Logo Konteyneri */}
           <div className="flex items-center gap-1 md:gap-1.5 relative z-10 animate-pop-in drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]">
             
+            {/* ✅ inline-block ve pr-2 eklendi (N harfinin kesilmesi önlendi) */}
             <span 
-              className="text-4xl sm:text-6xl font-black italic tracking-tighter text-white animate-float-wave" 
+              className="inline-block pr-2 text-4xl sm:text-6xl font-black italic tracking-tighter text-white animate-float-wave" 
               style={{ animationDelay: '0s' }}
             >
               TOPTAN
             </span>
             
+            {/* ✅ inline-block ve pr-1.5 eklendi (D harfinin kesilmesi önlendi) */}
             <span 
-              className="text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FF7A00] animate-float-wave drop-shadow-[0_0_20px_rgba(255,122,0,0.5)]" 
+              className="inline-block pr-1.5 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FF7A00] animate-float-wave drop-shadow-[0_0_20px_rgba(255,122,0,0.5)]" 
               style={{ animationDelay: '0.15s' }}
             >
               3D
             </span>
             
+            {/* ✅ inline-block ve pr-2 eklendi (M harfinin kesilmesi önlendi) */}
             <span 
-              className="text-2xl sm:text-4xl font-black italic tracking-tighter text-white mt-3 sm:mt-5 animate-float-wave" 
+              className="inline-block pr-2 text-2xl sm:text-4xl font-black italic tracking-tighter text-white mt-3 sm:mt-5 animate-float-wave" 
               style={{ animationDelay: '0.3s' }}
             >
               CIM
