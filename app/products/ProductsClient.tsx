@@ -7,7 +7,6 @@ import CatalogPagination from "@/components/products/CatalogPagination";
 import { CartFab } from "@/components/cart/CartIndicator";
 import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
 import ProductFilter from "@/components/products/ProductFilter";
-import { getClosestStandardColor } from "@/app/products/ProductsClient"; // Eğer fonksiyon başka yerdeyse importu kontrol et
 
 type Product = any;
 type Category = { key: string; label: string };
