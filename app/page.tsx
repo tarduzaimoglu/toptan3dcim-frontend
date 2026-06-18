@@ -1,4 +1,4 @@
-export const revalidate = 3600;
+export const revalidate = 3600; // Sayfa 1 saatte bir arka planda güncellenir.
 
 import HeroBanner from "@/components/HeroBanner";
 import ProductCarousel from "@/components/ProductCarousel";
@@ -30,30 +30,35 @@ export default async function HomePage() {
         <HeroBanner banners={banners} />
       </section>
 
-      <section className="py-24 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center mb-16">
+      {/* MODERN E-TİCARET TASARIMI: bg-slate-50 ve çerçevelenmiş alan */}
+      <section className="py-24 bg-slate-50 relative">
+        <div className="container mx-auto px-4 overflow-visible">
+          
+          <header className="mb-16 text-center">
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight uppercase">
-              Hızlı Üretim
+              ÜRÜNLERİMİZ
             </h2>
             <p className="text-slate-500 mt-4 text-lg">İşletmenize özel 3D baskı çözümleri</p>
-            <div className="w-32 h-1.5 bg-[#7C3AED] mt-6 rounded-full" />
-          </div>
+            <div className="w-24 h-1.5 bg-[#7C3AED] mx-auto mt-6 rounded-full"></div>
+          </header>
 
-          <div className="bg-white p-6 md:p-12 rounded-3xl shadow-sm border border-slate-100 overflow-visible">
+          <div className="bg-white p-4 md:p-10 rounded-3xl shadow-sm border border-slate-100 overflow-visible">
             {randomProducts.length > 0 ? (
               <ProductCarousel products={randomProducts} />
             ) : (
-              <div className="text-center py-20 text-slate-400 italic">Sergilenecek ürün bulunamadı.</div>
+              <div className="text-center py-20 text-slate-400 italic">
+                Sergilenecek ürün bulunamadı.
+              </div>
             )}
           </div>
           
-          <div className="flex justify-center mt-16">
-            <a href="/products" className="group flex items-center gap-2 px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-[#7C3AED] transition-all duration-300 shadow-xl">
-              TÜM KATALOĞU KEŞFET 
+          <div className="text-center mt-20 flex justify-center">
+            <a href="/products" className="group inline-flex items-center gap-3 px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold tracking-widest hover:bg-[#7C3AED] transition-all duration-300 shadow-xl">
+              TÜM KATALOĞU KEŞFET
               <span className="group-hover:translate-x-2 transition-transform duration-300">→</span>
             </a>
           </div>
+
         </div>
       </section>
     </main>
