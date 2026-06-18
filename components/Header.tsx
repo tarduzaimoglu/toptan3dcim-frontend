@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/cart/CartContext"; 
 
@@ -30,49 +30,29 @@ function ShoppingCartIcon({ className = "" }: { className?: string }) {
 }
 
 function AnimatedBurger({ open }: { open: boolean }) {
-  // Akıcı ve modern "Spring" efekti için özel zamanlama (EASE)
-  const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
   const commonLineClass = `absolute left-0 h-[2.5px] w-6 rounded-full bg-slate-700 transform-gpu transition-all duration-300 ${EASE}`;
 
   return (
     <span className="relative block h-6 w-6" aria-hidden="true">
-      {/* Üst Çizgi */}
-      <span
-        className={[
-          commonLineClass,
-          "top-[6px]",
-          open ? "translate-y-[6px] rotate-45" : "translate-y-0 rotate-0",
-        ].join(" ")}
-      />
-      {/* Orta Çizgi */}
-      <span
-        className={[
-          commonLineClass,
-          "top-[12px]",
-          open ? "opacity-0 scale-x-50" : "opacity-100 scale-x-100",
-        ].join(" ")}
-      />
-      {/* Alt Çizgi */}
-      <span
-        className={[
-          commonLineClass,
-          "top-[18px]",
-          open ? "-translate-y-[6px] -rotate-45" : "translate-y-0 rotate-0",
-        ].join(" ")}
-      />
+      <span className={[commonLineClass, "top-[6px]", open ? "translate-y-[6px] rotate-45" : "translate-y-0 rotate-0"].join(" ")} />
+      <span className={[commonLineClass, "top-[12px]", open ? "opacity-0 scale-x-50" : "opacity-100 scale-x-100"].join(" ")} />
+      <span className={[commonLineClass, "top-[18px]", open ? "-translate-y-[6px] -rotate-45" : "translate-y-0 rotate-0"].join(" ")} />
     </span>
   );
 }
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const { items } = useCart();
 
-  // DÜZELTİLEN YER: quantity yerine qty kullanıldı
   const cartCount = useMemo(() => {
     return items.reduce((total, item) => total + item.qty, 0);
   }, [items]);
+
+  // YENİ: Sepet sayısı 99'u geçerse 99+ göstererek butonun uzamasını engelliyoruz
+  const displayCartCount = cartCount > 99 ? "99+" : cartCount;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -109,16 +89,16 @@ export default function Header() {
             : "bg-white py-5"
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
-          {/* Logo Alanı */}
-          <Link href="/" className="group flex items-center gap-0.5 transition-transform hover:scale-105" onClick={() => setOpen(false)}>
-            <span className="text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
-            <span className="text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
-            <span className="text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
+          {/* Logo Alanı - YENİ: min-w-0 ve shrink ekleyerek mobilde alan esnekliği sağlandı */}
+          <Link href="/" className="group flex items-center gap-0.5 transition-transform hover:scale-105 shrink min-w-0" onClick={() => setOpen(false)}>
+            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
+            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
+            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED]">CIM</span>
           </Link>
 
-          {/* Masaüstü Menü (Premium Hover Efektli) */}
+          {/* Masaüstü Menü */}
           <nav className="hidden md:flex items-center gap-10">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -142,17 +122,18 @@ export default function Header() {
           </nav>
 
           {/* Sağ Alan: Sepet & Mobil Buton */}
-          <div className="flex items-center gap-4">
+          {/* YENİ: shrink-0 eklendi, böylece ne kadar ürün eklenirse eklensin bu alan ezilmeyecek */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Link
               href="/cart"
-              className="group relative flex items-center gap-2.5 rounded-2xl bg-[#7C3AED] px-5 py-2.5 text-sm font-bold text-white shadow-xl shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:bg-[#6b1add]"
+              className="group relative flex items-center gap-1.5 sm:gap-2.5 rounded-2xl bg-[#7C3AED] px-3 sm:px-5 py-2 sm:py-2.5 text-sm font-bold text-white shadow-xl shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:bg-[#6b1add]"
             >
               <ShoppingCartIcon className="transition-transform group-hover:scale-110" />
               <span className="hidden md:inline">Sepetim</span>
               
               {cartCount > 0 && (
                 <span className="flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-white text-[11px] font-black text-[#7C3AED] animate-in zoom-in duration-300">
-                  {cartCount}
+                  {displayCartCount}
                 </span>
               )}
             </Link>
@@ -160,7 +141,7 @@ export default function Header() {
             {/* Mobil Menü Butonu */}
             <button
               type="button"
-              className="md:hidden flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+              className="md:hidden flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-700 shrink-0"
               onClick={() => setOpen((v) => !v)}
             >
               <AnimatedBurger open={open} />
