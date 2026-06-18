@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/components/cart/CartContext"; 
 
 const navItems = [
@@ -44,10 +44,11 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Evreler: idle (bekleme) -> reveal (oturaklı geliş) -> fadeOut (sayfa geçişi)
-  const [navState, setNavState] = useState<'idle' | 'reveal' | 'fadeOut'>('idle');
+  // Evreler: idle (gizli) -> active (mor cam ve dalgalı logo) -> leaving (sayfa değişti, eriyip kayboluyor)
+  const [navState, setNavState] = useState<'idle' | 'active' | 'leaving'>('idle');
   
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { items } = useCart();
 
@@ -64,26 +65,33 @@ export default function Header() {
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    // Aynı sayfaya tıklanırsa işlem yapma
     if (pathname === href || href.startsWith("http")) return; 
     
     e.preventDefault(); 
     setOpen(false); 
     
-    // 1. Evre: Logo ve buğulu cam ağırbaşlı bir şekilde belirir (450ms)
-    setNavState('reveal');
+    // 1. Ekranı anında Mor Buzlu Cam ile kapla ve animasyonu başlat
+    setNavState('active');
 
-    setTimeout(() => {
-      // 2. Evre: Sayfa geçişi için logonun pürüzsüzce silinmesi (200ms)
-      setNavState('fadeOut');
-      
-      setTimeout(() => {
-        router.push(href);
-        // Yeni sayfa ekranda göründükten hemen sonra temizlik
-        setTimeout(() => setNavState('idle'), 100);
-      }, 200); 
-
-    }, 450); // Toplamda ~650ms süren tok, sinematik geçiş
+    // 2. Beklemeden ARKA PLANDA Next.js'e yeni sayfayı yüklemesini söyle (İstediğin detay!)
+    router.push(href);
   };
+
+  // Yeni sayfa arka planda başarıyla yüklendiğinde (pathname veya URL parametresi değiştiğinde) tetiklenir
+  useEffect(() => {
+    if (navState === 'active') {
+      // Sayfa arka planda yüklendi! Animasyonun tadını çıkarmak için minik bir 600ms bekletiyoruz
+      const timer = setTimeout(() => {
+        setNavState('leaving'); // Cam yavaşça erimeye başlar
+        
+        // CSS kaybolma süresi bittiğinde tamamen ekrandan kaldır
+        setTimeout(() => setNavState('idle'), 400); 
+      }, 600); 
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, searchParams]); // Sayfa yolu veya parametresi değiştiğinde çalışır
 
   return (
     <>
@@ -184,33 +192,41 @@ export default function Header() {
         )}
       </header>
 
-      {/* SİNEMATİK "TOK" GEÇİŞ EFEKTİ */}
+      {/* YENİ: SİTE MORU BUZLU CAM VE DALGALANAN HAREKETLİ LOGO GEÇİŞİ */}
       {navState !== 'idle' && (
         <div 
-          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-2xl transition-opacity duration-300 ease-in-out
-          ${navState === 'reveal' ? 'opacity-100' : 'opacity-0'}`}
+          className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-400 ease-in-out
+          ${navState === 'active' 
+            ? 'opacity-100 bg-[#7C3AED]/80 backdrop-blur-2xl' 
+            : 'opacity-0 bg-[#7C3AED]/0 backdrop-blur-none'}`}
         >
-          <div className="relative flex items-center justify-center">
+          {/* Logo Konteyneri: Önce "Pop" diye belirir, sonra "Glow" ile parlar */}
+          <div className="flex items-center gap-1 md:gap-1.5 relative z-10 animate-pop-in drop-shadow-[0_0_25px_rgba(255,255,255,0.3)]">
             
-            {/* Arka Planda Nefes Alan Yumuşak Işık (Aura) */}
-            <div 
-              className={`absolute w-[250px] h-[250px] rounded-full blur-[80px] transition-all duration-700 ease-in-out
-              ${navState === 'reveal' ? 'bg-gradient-to-tr from-[#7C3AED] to-[#FF7A00] opacity-40 scale-100' : 'opacity-0 scale-90'}`} 
-            />
-
-            {/* Merkezdeki Ağırbaşlı Logo */}
-            <div 
-              className={`flex items-center gap-1 relative z-10 transition-all duration-500
-              ${navState === 'reveal' 
-                ? 'opacity-100 transform scale-100 translate-y-0 drop-shadow-xl' 
-                : 'opacity-0 transform scale-105 -translate-y-2'}`}
-              style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+            {/* TOPTAN (Gecikmesiz dalgalanır) - Renk: Beyaz */}
+            <span 
+              className="text-4xl sm:text-6xl font-black italic tracking-tighter text-white animate-float-wave" 
+              style={{ animationDelay: '0s' }}
             >
-              <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#7C3AED]">TOPTAN</span>
-              <span className="text-4xl sm:text-5xl font-black italic tracking-tighter text-[#FF7A00]">3D</span>
-              <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-[#7C3AED] mt-3">CIM</span>
-            </div>
-
+              TOPTAN
+            </span>
+            
+            {/* 3D (0.15s Gecikmeli dalgalanır) - Renk: Turuncu */}
+            <span 
+              className="text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FF7A00] animate-float-wave drop-shadow-[0_0_20px_rgba(255,122,0,0.5)]" 
+              style={{ animationDelay: '0.15s' }}
+            >
+              3D
+            </span>
+            
+            {/* CIM (0.3s Gecikmeli dalgalanır) - Renk: Beyaz */}
+            <span 
+              className="text-2xl sm:text-4xl font-black italic tracking-tighter text-white mt-3 sm:mt-5 animate-float-wave" 
+              style={{ animationDelay: '0.3s' }}
+            >
+              CIM
+            </span>
+            
           </div>
         </div>
       )}
@@ -225,6 +241,25 @@ export default function Header() {
         }
         .animate-marquee:hover {
           animation-play-state: paused;
+        }
+
+        /* LOGO BELİRME EFEKTİ (Ekrandan yüzeye çıkar gibi büyür) */
+        @keyframes pop-in {
+          0% { transform: scale(0.6); opacity: 0; }
+          60% { transform: scale(1.08); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in {
+          animation: pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* DALGALANMA / UZAYDA SÜZÜLME EFEKTİ (Sürekli Çalışır) */
+        @keyframes float-wave {
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-12px) scale(1.02); }
+        }
+        .animate-float-wave {
+          animation: float-wave 1s ease-in-out infinite;
         }
       `}</style>
     </>
