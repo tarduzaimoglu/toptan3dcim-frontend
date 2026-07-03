@@ -9,10 +9,90 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 
+function getMediaUrl(media: any): string | null {
+  if (!media) return null;
+
+  // Strapi v4 single media: image.data.attributes.url
+  if (media.data && !Array.isArray(media.data)) {
+    return media.data?.attributes?.url || media.data?.url || null;
+  }
+
+  // Strapi v4 multiple media: image.data[0].attributes.url
+  if (media.data && Array.isArray(media.data)) {
+    return media.data[0]?.attributes?.url || media.data[0]?.url || null;
+  }
+
+  // Strapi v5 / flat media: image.url
+  if (media.url) {
+    return media.url;
+  }
+
+  // Olası array media: image[0].url
+  if (Array.isArray(media)) {
+    return media[0]?.url || media[0]?.attributes?.url || null;
+  }
+
+  // Bazı yapılarda attributes içinde gelebilir
+  if (media.attributes?.url) {
+    return media.attributes.url;
+  }
+
+  return null;
+}
+
+function makeFullUrl(url: string, baseUrl: string): string {
+  if (url.startsWith("http")) return url;
+  return `${baseUrl}${url}`;
+}
+
+function normalizeLink(link?: string): string {
+  if (!link) return "#";
+
+  if (link.startsWith("http")) return link;
+
+  if (link.startsWith("/")) return link;
+
+  return `https://${link}`;
+}
+
 export default function HeroBanner({ banners }: { banners: any[] }) {
-  const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
+  const STRAPI_URL =
+    process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
 
   if (!banners || banners.length === 0) return null;
+
+  const validBanners = banners
+    .map((item) => {
+      const attr = item.attributes || item;
+
+      const desktopImg = getMediaUrl(attr.image);
+      const mobileImg = getMediaUrl(attr.mobileImage);
+      const link = attr.link;
+
+      if (!desktopImg) return null;
+
+      const fullDesktopUrl = makeFullUrl(desktopImg, STRAPI_URL);
+      const fullMobileUrl = mobileImg
+        ? makeFullUrl(mobileImg, STRAPI_URL)
+        : fullDesktopUrl;
+
+      return {
+        id: item.id,
+        title: attr.title || "Banner",
+        link,
+        fullDesktopUrl,
+        fullMobileUrl,
+      };
+    })
+    .filter(Boolean) as {
+    id: number | string;
+    title: string;
+    link?: string;
+    fullDesktopUrl: string;
+    fullMobileUrl: string;
+  }[];
+
+  if (validBanners.length === 0) return null;
 
   return (
     <div className="w-full relative group">
@@ -23,48 +103,27 @@ export default function HeroBanner({ banners }: { banners: any[] }) {
         modules={[Autoplay, Pagination, Navigation]}
         className="w-full"
       >
-        {banners.map((item) => {
-          const attr = item.attributes || item; 
-          
-          // Masaüstü Görseli
-          const desktopImg = attr.image?.data?.attributes?.url || attr.image?.url;
-          // Mobil Görseli (Yeni eklediğimiz alan)
-          const mobileImg = attr.mobileImage?.data?.attributes?.url || attr.mobileImage?.url;
-          
-          const link = attr.link;
-
-          if (!desktopImg) return null;
-
-          const fullDesktopUrl = desktopImg.startsWith("http") ? desktopImg : `${STRAPI_URL}${desktopImg}`;
-          const fullMobileUrl = mobileImg 
-            ? (mobileImg.startsWith("http") ? mobileImg : `${STRAPI_URL}${mobileImg}`)
-            : fullDesktopUrl; // Mobil görsel yoksa masaüstü görselini kullan
+        {validBanners.map((banner) => {
+          const imageElement = (
+            <picture>
+              <source media="(max-width: 768px)" srcSet={banner.fullMobileUrl} />
+              <img
+                src={banner.fullDesktopUrl}
+                alt={banner.title}
+                className="w-full h-auto block object-contain"
+              />
+            </picture>
+          );
 
           return (
-            <SwiperSlide key={item.id}>
+            <SwiperSlide key={banner.id}>
               <div className="w-full relative">
-                {link ? (
-                  <Link href={link.startsWith('http') ? link : `https://${link}`}>
-                    <picture>
-                      {/* Ekran 768px'den küçükse mobil görseli göster */}
-                      <source media="(max-width: 768px)" srcSet={fullMobileUrl} />
-                      {/* Daha büyük ekranlarda masaüstü görselini göster */}
-                      <img 
-                        src={fullDesktopUrl} 
-                        alt={attr.title || "Banner"}
-                        className="w-full h-auto block object-contain"
-                      />
-                    </picture>
+                {banner.link ? (
+                  <Link href={normalizeLink(banner.link)}>
+                    {imageElement}
                   </Link>
                 ) : (
-                  <picture>
-                    <source media="(max-width: 768px)" srcSet={fullMobileUrl} />
-                    <img 
-                      src={fullDesktopUrl} 
-                      alt="Banner" 
-                      className="w-full h-auto block object-contain"
-                    />
-                  </picture>
+                  imageElement
                 )}
               </div>
             </SwiperSlide>
@@ -73,16 +132,23 @@ export default function HeroBanner({ banners }: { banners: any[] }) {
       </Swiper>
 
       <style jsx global>{`
-        .swiper-button-next, .swiper-button-prev {
+        .swiper-button-next,
+        .swiper-button-prev {
           color: white !important;
           opacity: 0;
           transition: opacity 0.3s;
         }
-        .group:hover .swiper-button-next, .group:hover .swiper-button-prev {
+
+        .group:hover .swiper-button-next,
+        .group:hover .swiper-button-prev {
           opacity: 1;
         }
+
         @media (max-width: 768px) {
-          .swiper-button-next, .swiper-button-prev { display: none !important; }
+          .swiper-button-next,
+          .swiper-button-prev {
+            display: none !important;
+          }
         }
       `}</style>
     </div>
