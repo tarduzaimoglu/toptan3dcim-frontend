@@ -1,19 +1,33 @@
-// "force-dynamic" ve "revalidate = 0" satırlarını sildik.
-// ISR (Incremental Static Regeneration) sayesinde sayfa sunucuda hazır bekler.
-export const revalidate = 3600; // Sayfa 1 saatte bir arka planda güncellenir.
+// "force-dynamic" ve "revalidate = 0" satırlarını kullanmıyoruz.
+// Sayfa cache'li kalır, hızlı açılır.
+// Strapi webhook tetiklediğinde /api/revalidate üzerinden cache anlık temizlenir.
+export const revalidate = 86400; // Normal şartlarda 24 saatte bir arka planda güncellenir.
 
 import HeroBanner from "@/components/HeroBanner";
 import ProductCarousel from "@/components/ProductCarousel";
 import { getCatalogProducts } from "@/lib/strapi";
 
 async function getBanners() {
-  const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
+  const STRAPI_URL =
+    process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
+
   try {
-    // cache: 'force-cache' ekleyerek sunucunun veriyi önbelleğe almasını sağlıyoruz
-    const res = await fetch(`${STRAPI_URL}/api/banners2?populate=*`, { cache: "no-store", });
+    const res = await fetch(`${STRAPI_URL}/api/banners2?populate=*`, {
+      next: {
+        tags: ["banners"],
+        revalidate: 86400,
+      },
+    });
+
+    if (!res.ok) {
+      console.error("Banner fetch failed:", res.status, res.statusText);
+      return [];
+    }
+
     const json = await res.json();
     return json.data || [];
   } catch (error) {
+    console.error("Banner fetch error:", error);
     return [];
   }
 }
@@ -26,7 +40,7 @@ export default async function HomePage() {
   ]);
 
   const safeProducts = Array.isArray(allProducts) ? allProducts : [];
-  
+
   // ÖNEMLİ: Statik sayfalarda Math.random() kullanmak hydration hatası verebilir.
   // Bu yüzden rastgeleliği sunucuda yapıp sayfayı statik olarak donduruyoruz.
   const randomProducts = [...safeProducts].sort(() => Math.random() - 0.5);
@@ -55,9 +69,12 @@ export default async function HomePage() {
               Sergilenecek ürün bulunamadı.
             </div>
           )}
-          
+
           <div className="text-center mt-20">
-            <a href="/products" className="inline-flex items-center justify-center px-12 py-4 bg-slate-900 text-white rounded-full font-bold text-sm tracking-widest hover:bg-[#7C3AED] transition-all duration-300 shadow-xl">
+            <a
+              href="/products"
+              className="inline-flex items-center justify-center px-12 py-4 bg-slate-900 text-white rounded-full font-bold text-sm tracking-widest hover:bg-[#7C3AED] transition-all duration-300 shadow-xl"
+            >
               TÜM KATALOĞU KEŞFET
             </a>
           </div>
