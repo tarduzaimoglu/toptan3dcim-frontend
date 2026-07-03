@@ -10,7 +10,7 @@ async function getBanners() {
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
   try {
     // cache: 'force-cache' ekleyerek sunucunun veriyi önbelleğe almasını sağlıyoruz
-    const res = await fetch(`${STRAPI_URL}/api/banners2?populate=*`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${STRAPI_URL}/api/banners2?populate=*`, { cache: "no-store", });
     const json = await res.json();
     return json.data || [];
   } catch (error) {
