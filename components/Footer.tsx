@@ -73,6 +73,7 @@ export default function Footer() {
                 { name: 'Gizlilik Politikası', href: '/privacy-policy' },
                 { name: 'Mesafeli Satış Sözleşmesi', href: '/distance-selling' },
                 { name: 'Teslimat & İade Koşulları', href: '/delivery-returns' },
+                { name: 'Kullanım Koşulları', href: '/terms-of-use' },
                 { name: 'Sık Sorulan Sorular', href: '/faq' },
               ].map((link) => (
                 <li key={link.name}>
