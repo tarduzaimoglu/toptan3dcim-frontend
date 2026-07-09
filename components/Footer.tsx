@@ -115,7 +115,7 @@ export default function Footer() {
         {/* Alt Kısım: Telif */}
         <div className="pt-8 text-center md:text-left">
           <p className="text-slate-500 text-xs">
-            © {new Date().getFullYear()} <span className="text-white font-semibold">KesioLabs</span> Endüstriyel Tasarım ve Üretim. Tüm hakları saklıdır.
+            © {new Date().getFullYear()} <span className="text-white font-semibold">Kesiolabs</span> Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi. Tüm hakları saklıdır.
           </p>
         </div>
       </div>

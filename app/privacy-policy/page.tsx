@@ -18,7 +18,7 @@ export default function PrivacyPolicyPage() {
         <article className="prose prose-slate lg:prose-lg max-w-none text-gray-700 leading-relaxed space-y-8">
           
           <p>
-            <strong>KesioLabs Endüstriyel Tasarım Yazılım Üretim Ticaret Ltd. Şti.</strong> (“KesioLabs” veya “Şirket”) olarak, <strong>Toptan3Dcim</strong> markamız altında sunduğumuz hizmetlerde kişisel verilerin korunması ve gizliliğin sağlanması hususunda azami hassasiyet göstermekteyiz. İşbu Gizlilik Politikası, Toptan3Dcim’e ait internet sitesi üzerinden elde edilen kişisel verilerin; hangi kapsamda, hangi amaçlarla işlendiğini ve nasıl korunduğunu açıklamak amacıyla hazırlanmıştır.
+            <strong>Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi</strong> (“KesioLabs” veya “Şirket”) olarak, <strong>Toptan3Dcim</strong> markamız altında sunduğumuz hizmetlerde kişisel verilerin korunması ve gizliliğin sağlanması hususunda azami hassasiyet göstermekteyiz. İşbu Gizlilik Politikası, Toptan3Dcim’e ait internet sitesi üzerinden elde edilen kişisel verilerin; hangi kapsamda, hangi amaçlarla işlendiğini ve nasıl korunduğunu açıklamak amacıyla hazırlanmıştır.
           </p>
 
           <p>

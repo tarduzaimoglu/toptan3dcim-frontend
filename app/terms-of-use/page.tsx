@@ -27,7 +27,7 @@ export default function TermsOfUsePage() {
           <section>
             <h2 className="text-[#7F22FE] text-2xl font-bold mb-4">1. Taraflar ve Kapsam</h2>
             <p>
-              İşbu Kullanım Koşulları (&quot;Koşullar&quot;), <strong>KesioLabs Endüstriyel Tasarım ve Üretim</strong> (&quot;Şirket&quot;) tarafından işletilen <strong>toptan3dcim.com</strong> internet sitesinin (&quot;Site&quot;) kullanımına ilişkin şart ve koşulları düzenler. Toptan3Dcim, KesioLabs&apos;a ait bir satış markasıdır; Site üzerinden gerçekleştirilen tüm satış işlemlerinde satıcı taraf KesioLabs Endüstriyel Tasarım ve Üretim&apos;dir.
+              İşbu Kullanım Koşulları (&quot;Koşullar&quot;), <strong>Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi</strong> (&quot;KesioLabs&quot; veya &quot;Şirket&quot;) tarafından işletilen <strong>toptan3dcim.com</strong> internet sitesinin (&quot;Site&quot;) kullanımına ilişkin şart ve koşulları düzenler. Toptan3Dcim, KesioLabs&apos;a ait bir satış markasıdır; Site üzerinden gerçekleştirilen tüm satış işlemlerinde satıcı taraf Şirket&apos;tir.
             </p>
             <p>
               Siteyi ziyaret eden, üye olan veya Site üzerinden alışveriş yapan tüm gerçek ve tüzel kişiler (&quot;Kullanıcı&quot;), işbu Koşulları okumuş, anlamış ve kabul etmiş sayılır. Bu Koşulları kabul etmiyorsanız lütfen Siteyi kullanmayınız.
@@ -35,7 +35,7 @@ export default function TermsOfUsePage() {
             <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100">
               <p className="font-semibold mb-2">Şirket Bilgileri:</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Unvan: KesioLabs Endüstriyel Tasarım ve Üretim</li>
+                <li>Unvan: Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi</li>
                 <li>Adres: Acıbadem Mahallesi, Akçaağaç Sokak No: 8 Üsküdar / İstanbul</li>
                 <li>E-posta: info@kesiolabs.com</li>
                 <li>Telefon: 0546 586 80 05</li>
@@ -87,7 +87,7 @@ export default function TermsOfUsePage() {
           <section>
             <h2 className="text-[#7F22FE] text-2xl font-bold mb-4">6. Sipariş ve Ödeme</h2>
             <p>6.1. Site üzerinden verilen siparişler, ödemenin onaylanması ile birlikte işleme alınır.</p>
-            <p>6.2. Ödemeler; kredi kartı, banka kartı (sanal POS aracılığıyla) veya havale/EFT yöntemiyle yapılabilir. Kart ile yapılan ödemelerde taksit seçenekleri, ilgili banka ve ödeme kuruluşunun koşullarına tabidir. Ödemelerin muhatabı ve tahsilat yapan taraf KesioLabs Endüstriyel Tasarım ve Üretim&apos;dir.</p>
+            <p>6.2. Ödemeler; kredi kartı, banka kartı (sanal POS aracılığıyla) veya havale/EFT yöntemiyle yapılabilir. Kart ile yapılan ödemelerde taksit seçenekleri, ilgili banka ve ödeme kuruluşunun koşullarına tabidir. Ödemelerin muhatabı ve tahsilat yapan taraf Şirket&apos;tir.</p>
             <p>6.3. Ürün fiyatları KDV dahil olarak gösterilmektedir. Kargo ücretleri, sipariş tutarına göre değişiklik gösterebilir ve ödeme sayfasında ayrıca belirtilir.</p>
             <p>6.4. Şirket, fiyat veya ürün bilgilerinde oluşabilecek yazım/sistem hatalarından kaynaklanan siparişleri iptal etme hakkını saklı tutar. Bu durumda tahsil edilen tutar Kullanıcı&apos;ya iade edilir.</p>
             <p>
@@ -113,7 +113,7 @@ export default function TermsOfUsePage() {
           <section>
             <h2 className="text-[#7F22FE] text-2xl font-bold mb-4">8. Kişisel Verilerin Korunması</h2>
             <p>
-              Kullanıcılara ait kişisel veriler, veri sorumlusu sıfatıyla KesioLabs Endüstriyel Tasarım ve Üretim tarafından 6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) kapsamında işlenmektedir. Detaylı bilgi için{' '}
+              Kullanıcılara ait kişisel veriler, veri sorumlusu sıfatıyla Şirket tarafından 6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) kapsamında işlenmektedir. Detaylı bilgi için{' '}
               <Link href="/privacy-policy" className="text-[#7F22FE] font-semibold hover:underline">
                 Gizlilik Politikası
               </Link>{' '}
@@ -159,7 +159,7 @@ export default function TermsOfUsePage() {
           </section>
 
           <p className="text-sm text-gray-500 italic border-t pt-8">
-            © 2026 KesioLabs Endüstriyel Tasarım ve Üretim. Tüm hakları saklıdır.
+            © 2026 Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi. Tüm hakları saklıdır.
           </p>
 
         </article>

@@ -4,12 +4,12 @@
 
 ## 1. Taraflar ve Kapsam
 
-İşbu Kullanım Koşulları ("Koşullar"), **KesioLabs Endüstriyel Tasarım ve Üretim** ("Şirket") tarafından işletilen **toptan3dcim.com** internet sitesinin ("Site") kullanımına ilişkin şart ve koşulları düzenler. Toptan3Dcim, KesioLabs'a ait bir satış markasıdır; Site üzerinden gerçekleştirilen tüm satış işlemlerinde satıcı taraf KesioLabs Endüstriyel Tasarım ve Üretim'dir.
+İşbu Kullanım Koşulları ("Koşullar"), **Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi** ("KesioLabs" veya "Şirket") tarafından işletilen **toptan3dcim.com** internet sitesinin ("Site") kullanımına ilişkin şart ve koşulları düzenler. Toptan3Dcim, KesioLabs'a ait bir satış markasıdır; Site üzerinden gerçekleştirilen tüm satış işlemlerinde satıcı taraf Şirket'tir.
 
 Siteyi ziyaret eden, üye olan veya Site üzerinden alışveriş yapan tüm gerçek ve tüzel kişiler ("Kullanıcı"), işbu Koşulları okumuş, anlamış ve kabul etmiş sayılır. Bu Koşulları kabul etmiyorsanız lütfen Siteyi kullanmayınız.
 
 **Şirket Bilgileri:**
-- Unvan: KesioLabs Endüstriyel Tasarım ve Üretim
+- Unvan: Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi
 - Adres: Acıbadem Mahallesi, Akçaağaç Sokak No: 8 Üsküdar / İstanbul
 - E-posta: info@kesiolabs.com
 - Telefon: 0546 586 80 05
@@ -56,7 +56,7 @@ kabul ve taahhüt eder.
 
 6.1. Site üzerinden verilen siparişler, ödemenin onaylanması ile birlikte işleme alınır.
 
-6.2. Ödemeler; kredi kartı, banka kartı (sanal POS aracılığıyla) veya havale/EFT yöntemiyle yapılabilir. Kart ile yapılan ödemelerde taksit seçenekleri, ilgili banka ve ödeme kuruluşunun koşullarına tabidir. Ödemelerin muhatabı ve tahsilat yapan taraf KesioLabs Endüstriyel Tasarım ve Üretim'dir.
+6.2. Ödemeler; kredi kartı, banka kartı (sanal POS aracılığıyla) veya havale/EFT yöntemiyle yapılabilir. Kart ile yapılan ödemelerde taksit seçenekleri, ilgili banka ve ödeme kuruluşunun koşullarına tabidir. Ödemelerin muhatabı ve tahsilat yapan taraf Şirket'tir.
 
 6.3. Ürün fiyatları KDV dahil olarak gösterilmektedir. Kargo ücretleri, sipariş tutarına göre değişiklik gösterebilir ve ödeme sayfasında ayrıca belirtilir.
 
@@ -70,7 +70,7 @@ Teslimat süreçleri, cayma hakkı ve iade koşullarına ilişkin detaylar [Tesl
 
 ## 8. Kişisel Verilerin Korunması
 
-Kullanıcılara ait kişisel veriler, veri sorumlusu sıfatıyla KesioLabs Endüstriyel Tasarım ve Üretim tarafından 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında işlenmektedir. Detaylı bilgi için [Gizlilik Politikası](/privacy-policy) sayfasını inceleyebilirsiniz.
+Kullanıcılara ait kişisel veriler, veri sorumlusu sıfatıyla Şirket tarafından 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında işlenmektedir. Detaylı bilgi için [Gizlilik Politikası](/privacy-policy) sayfasını inceleyebilirsiniz.
 
 ## 9. Sorumluluğun Sınırlandırılması
 
@@ -98,4 +98,4 @@ Doğal afet, savaş, salgın hastalık, altyapı ve internet arızaları, mevzua
 - **Telefon:** 0546 586 80 05
 - **Adres:** Acıbadem Mahallesi, Akçaağaç Sokak No: 8 Üsküdar / İstanbul
 
-© 2026 KesioLabs Endüstriyel Tasarım ve Üretim. Tüm hakları saklıdır.
+© 2026 Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi. Tüm hakları saklıdır.

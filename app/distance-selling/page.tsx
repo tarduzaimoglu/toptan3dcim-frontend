@@ -25,7 +25,7 @@ export default function DistanceSellingPage() {
         <article className="prose prose-slate lg:prose-lg max-w-none text-gray-700 leading-relaxed space-y-8">
 
           <p>
-            İşbu Mesafeli Satış Sözleşmesi (&quot;Sözleşme&quot;), 6502 sayılı Tüketicinin Korunması Hakkında Kanun (&quot;Kanun&quot;) ve Mesafeli Sözleşmeler Yönetmeliği (&quot;Yönetmelik&quot;) hükümleri uyarınca, aşağıda bilgileri yer alan Satıcı ile Alıcı arasında, <strong>toptan3dcim.com</strong> (&quot;Site&quot;) üzerinden elektronik ortamda kurulan mesafeli satış sözleşmelerinin şartlarını belirlemek amacıyla düzenlenmiştir. Toptan3Dcim, Site&apos;nin işletildiği satış markası olup, işbu Sözleşme kapsamındaki satıcı taraf her koşulda KesioLabs Endüstriyel Tasarım ve Üretim&apos;dir.
+            İşbu Mesafeli Satış Sözleşmesi (&quot;Sözleşme&quot;), 6502 sayılı Tüketicinin Korunması Hakkında Kanun (&quot;Kanun&quot;) ve Mesafeli Sözleşmeler Yönetmeliği (&quot;Yönetmelik&quot;) hükümleri uyarınca, aşağıda bilgileri yer alan Satıcı ile Alıcı arasında, <strong>toptan3dcim.com</strong> (&quot;Site&quot;) üzerinden elektronik ortamda kurulan mesafeli satış sözleşmelerinin şartlarını belirlemek amacıyla düzenlenmiştir. Satıcı taraf, <strong>Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi</strong> (&quot;KesioLabs&quot; veya &quot;Şirket&quot;) olup; Toptan3Dcim, Site&apos;nin işletildiği satış markası olarak anılmaktadır ve işbu Sözleşme kapsamındaki satıcı taraf her koşulda Şirket&apos;tir.
           </p>
 
           <section>
@@ -33,7 +33,7 @@ export default function DistanceSellingPage() {
             <div className="bg-slate-50 p-8 rounded-2xl border border-slate-100 mb-6">
               <p className="font-semibold mb-2">SATICI</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Unvan: KesioLabs Endüstriyel Tasarım ve Üretim</li>
+                <li>Unvan: Kesiolabs Endüstriyel Tasarım Yazılım Üretim Ticaret Limited Şirketi</li>
                 <li>Adres: Acıbadem Mah. Akçaağaç Sk. No:8 Üsküdar/İstanbul</li>
                 <li>E-posta: info@kesiolabs.com</li>
                 <li>Telefon: 0546 586 80 05</li>
@@ -67,7 +67,7 @@ export default function DistanceSellingPage() {
               3.2. Ödeme; kredi kartı, banka kartı (sanal POS aracılığıyla tek çekim veya taksitli) ya da havale/EFT yöntemleriyle yapılabilir. Taksit imkânları ilgili bankanın kampanyalarına tabidir ve Satıcı&apos;yı bağlamaz.
             </p>
             <p>
-              3.3. Sipariş bedelinin tahsilatı, Satıcı KesioLabs Endüstriyel Tasarım ve Üretim adına yapılır. Alıcı, ödeme aracı kuruluşuna ilettiği kart bilgilerinin doğruluğundan sorumludur.
+              3.3. Sipariş bedelinin tahsilatı, Satıcı Şirket adına yapılır. Alıcı, ödeme aracı kuruluşuna ilettiği kart bilgilerinin doğruluğundan sorumludur.
             </p>
             <p>
               3.4. Ürün fiyatlarında ve stok durumunda ilan tarihinden sonra değişiklik yapma hakkı Satıcı&apos;ya aittir; ancak Alıcı tarafından onaylanmış bir siparişin bedeli, açık bir sistem/yazım hatası bulunmadıkça tek taraflı olarak değiştirilemez.
