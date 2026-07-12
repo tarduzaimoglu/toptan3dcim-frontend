@@ -6,7 +6,7 @@ import { useCart, CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/Ca
 
 // --- YARDIMCI FONKSİYONLAR ---
 function whatsappUrlForProduct(title: string) {
-  const phone = "905537538182";
+  const phone = "905465868005";
   const text = `Merhaba, "${title}" hakkında bilgi almak istiyorum.`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }

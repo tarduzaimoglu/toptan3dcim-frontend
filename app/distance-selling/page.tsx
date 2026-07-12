@@ -92,6 +92,9 @@ export default function DistanceSellingPage() {
               </Link>{' '}
               sayfası geçerlidir.
             </p>
+            <p>
+              4.5. Kargo ücreti, sepet tutarına (kademeli indirim uygulanmış, KDV dahil) göre belirlenir: sepet tutarı 1.500 TL ve üzerinde ise kargo ücretsizdir; bu tutarın altındaki siparişlerde sabit 200 TL kargo ücreti uygulanır. Uygulanacak kargo ücreti, ödeme/sipariş onay ekranında ayrıca gösterilir.
+            </p>
           </section>
 
           <section>

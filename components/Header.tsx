@@ -13,7 +13,7 @@ const navItems = [
 ];
 
 const PROMOS = [
-  "🚀 2000₺ Üzeri Kargo Ücretsiz",
+  "🚀 1500₺ Üzeri Kargo Ücretsiz",
   "💳 9 Aya Varan Taksit İmkânı",
   "💸 Tüm Ürünlerde %3 Havale/EFT İndirimi",
 ];

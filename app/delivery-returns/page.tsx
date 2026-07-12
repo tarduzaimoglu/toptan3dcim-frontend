@@ -31,6 +31,9 @@ export default function DeliveryReturnsPage() {
               <li>Anlaşmalı lojistik/kargo firmaları aracılığıyla gönderim sağlanır.</li>
               <li>Kargo süresi üretim süresine dahil değildir.</li>
             </ul>
+            <p className="mt-4">
+              <strong>Kargo Ücreti:</strong> Sepet tutarı (kademeli indirim uygulanmış, KDV dahil) 1.500 TL ve üzerinde ise kargo ücretsizdir; bu tutarın altındaki siparişlerde sabit 200 TL kargo ücreti uygulanır.
+            </p>
           </section>
 
           <section>

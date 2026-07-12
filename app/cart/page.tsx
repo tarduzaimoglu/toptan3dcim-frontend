@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import {
   useCart,
@@ -8,10 +9,14 @@ import {
   CART_MAX_QTY,
   CART_STEP,
 } from "@/components/cart/CartContext";
+import {
+  vatInclusiveAmount,
+  shippingFeeFor,
+  FREE_SHIPPING_THRESHOLD,
+  SHIPPING_FEE,
+} from "@/lib/pricing";
 
-const WHATSAPP_PHONE = "905537538182"; 
-const VAT_RATE = 0.2;
-const FREE_SHIPPING_THRESHOLD = 1500; 
+const WHATSAPP_PHONE = "905465868005";
 
 const formatTry = (n: number) =>
   new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
@@ -35,9 +40,10 @@ function buildPrintableHtml(payload: {
     total: number;
   }>;
   subtotal: number;
-  vat: number;
+  vatInfo: number;
   grandTotal: number;
   savings: number;
+  shippingFee: number;
   shippingText: string;
   freeShippingHint?: string;
 }) {
@@ -114,8 +120,8 @@ function buildPrintableHtml(payload: {
 
   <div class="totals">
     <div class="box">
-      <div class="row"><span>Ara Toplam (indirimli)</span><span><b>${escapeHtml(formatTry(payload.subtotal))}</b></span></div>
-      <div class="row"><span>%20 KDV</span><span><b>${escapeHtml(formatTry(payload.vat))}</b></span></div>
+      <div class="row"><span>Ara Toplam (indirimli, KDV dahil)</span><span><b>${escapeHtml(formatTry(payload.subtotal))}</b></span></div>
+      <div class="row"><span>KDV (fiyatlara dahildir)</span><span>${escapeHtml(formatTry(payload.vatInfo))}</span></div>
       <div class="row"><span>İndirim Kazancı</span><span class="save">${escapeHtml(formatTry(payload.savings))}</span></div>
       <div class="row"><span>Kargo</span><span><b>${escapeHtml(payload.shippingText)}</b></span></div>
       ${hintLine}
@@ -161,15 +167,16 @@ export default function CartPage() {
   });
 
   const subtotal = cartTotal;
-  const vat = subtotal * VAT_RATE;
-  const grandTotal = subtotal + vat;
+  const vatInfo = vatInclusiveAmount(subtotal);
+  const shippingFee = shippingFeeFor(subtotal);
+  const grandTotal = subtotal + shippingFee;
 
   const undiscountedSubtotal = mapped.reduce((sum, x) => sum + x.unitBase * x.qty, 0);
   const savings = Math.max(0, undiscountedSubtotal - subtotal);
 
-  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const isFreeShipping = shippingFee === 0;
   const remainingForFree = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const shippingText = isFreeShipping ? "Ücretsiz" : "Hesaplanacak";
+  const shippingText = isFreeShipping ? "Ücretsiz" : formatTry(SHIPPING_FEE);
 
   const freeShippingHint = isFreeShipping
     ? "Koşul sağlandı"
@@ -177,7 +184,14 @@ export default function CartPage() {
 
   const freeShipProgress = Math.min(1, subtotal / FREE_SHIPPING_THRESHOLD);
 
-  const handleContinue = () => {
+  const router = useRouter();
+
+  const handleCardPayment = () => {
+    if (items.length === 0) return;
+    router.push("/checkout");
+  };
+
+  const handleWhatsAppOrder = () => {
     if (items.length === 0) return;
 
     // 1. WhatsApp Mesajını Hazırla
@@ -194,11 +208,11 @@ export default function CartPage() {
     const message =
       `Merhaba, sepet özetimi iletiyorum.\n\n` +
       `${lines}\n\n` +
-      `Ara Toplam (indirimli): ${formatTry(subtotal)}\n` +
-      `%20 KDV: ${formatTry(vat)}\n` +
+      `Ara Toplam (indirimli, KDV dahil): ${formatTry(subtotal)}\n` +
+      `KDV (fiyatlara dahildir): ${formatTry(vatInfo)}\n` +
       `İndirim Kazancı: ${formatTry(savings)}\n` +
-      `Genel Toplam: ${formatTry(grandTotal)}\n` +
-      `${isFreeShipping ? "Kargo: Ücretsiz" : "Kargo: Hesaplanacak"}\n\n` +
+      `Kargo: ${shippingText}\n` +
+      `Genel Toplam: ${formatTry(grandTotal)}\n\n` +
       `Not: PDF dosyasını bu mesaja ek olarak göndereceğim.`;
 
     const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
@@ -220,9 +234,10 @@ export default function CartPage() {
         const html = buildPrintableHtml({
           items: mapped,
           subtotal,
-          vat,
+          vatInfo,
           grandTotal,
           savings,
+          shippingFee,
           shippingText,
           freeShippingHint: isFreeShipping ? undefined : freeShippingHint,
         });
@@ -332,13 +347,16 @@ export default function CartPage() {
           <div className="text-[18px] font-semibold">Özet</div>
           <div className="mt-5 space-y-3 text-[14px]">
             <div className="flex justify-between"><span>Ara toplam</span><span>{formatTry(subtotal)}</span></div>
-            <div className="flex justify-between"><span>%20 KDV</span><span>{formatTry(vat)}</span></div>
+            <div className="flex justify-between text-slate-500 text-[13px]"><span>KDV (fiyatlara dahildir)</span><span>{formatTry(vatInfo)}</span></div>
             <div className="flex justify-between text-emerald-700"><span>İndirim kazancı</span><span>{formatTry(savings)}</span></div>
+            <div className="flex justify-between"><span>Kargo</span><span className={isFreeShipping ? "text-emerald-700 font-bold" : ""}>{shippingText}</span></div>
             <div className="h-px bg-slate-200 my-2" />
             <div className="flex justify-between font-bold text-lg"><span>Genel toplam</span><span>{formatTry(grandTotal)}</span></div>
-            <div className="flex justify-between pt-2"><span>Kargo</span><span className={isFreeShipping ? "text-emerald-700 font-bold" : ""}>{shippingText}</span></div>
           </div>
-          <button onClick={handleContinue} className="mt-6 h-12 w-full rounded-xl bg-[#7C3AED] text-white font-semibold hover:bg-[#6D28D9] transition-colors duration-300">Devam Et</button>
+          <div className="mt-6 space-y-3">
+            <button onClick={handleCardPayment} className="h-12 w-full rounded-xl bg-[#7C3AED] text-white font-semibold hover:bg-[#6D28D9] transition-colors duration-300">Kart ile Öde</button>
+            <button onClick={handleWhatsAppOrder} className="h-12 w-full rounded-xl border border-slate-300 text-slate-900 font-semibold hover:bg-slate-50 transition-colors duration-300">WhatsApp ile Sipariş</button>
+          </div>
           <div className="mt-4 text-[12px] text-slate-600">Not: Adet değişiklikleri kısıtlamalara göre uygulanır.</div>
         </div>
       </div>
