@@ -21,8 +21,12 @@ function dynamicClamp(qty: number, minAllowed: number) {
   return Math.min(CART_MAX_QTY, Math.max(minAllowed, qty));
 }
 
+export type CartItemVariant = { colorName: string };
+
 type StoredCartItem = {
   id: string;
+  productId: string;
+  variant?: CartItemVariant | null;
   qty: number;
   product: {
     id: string;
@@ -34,7 +38,11 @@ type StoredCartItem = {
 };
 
 export type CartItem = {
+  /** Satır anahtarı (UI'da tekilliği sağlar): productId + varyant kombinasyonu olabilir. */
   id: string;
+  /** Backend'e (Strapi) giden saf ürün id'si — asla varyant bilgisiyle birleştirilmez. */
+  productId: string;
+  variant?: CartItemVariant | null;
   product: Product & {
     wholesalePrice?: number;
     imageUrl?: string;
@@ -44,12 +52,14 @@ export type CartItem = {
 };
 
 type AddPayload = {
+  /** Saf Strapi ürün id'si. */
   id: string;
   title: string;
   price?: number;
   image?: string;
   qty?: number;
   minQty?: number; // ✅ Panelden gelen minQty
+  variant?: CartItemVariant | null;
 };
 
 type CartContextValue = {
@@ -57,16 +67,16 @@ type CartContextValue = {
   itemCount: number;
   qtyCount: number;
   hydrated: boolean;
-  unitPriceOf: (productId: string) => number;
-  discountPerUnitOf: (productId: string) => number;
-  effectiveUnitPriceOf: (productId: string) => number;
-  lineTotalOf: (productId: string) => number;
+  unitPriceOf: (rowId: string) => number;
+  discountPerUnitOf: (rowId: string) => number;
+  effectiveUnitPriceOf: (rowId: string) => number;
+  lineTotalOf: (rowId: string) => number;
   cartTotal: number;
   addItem: (payload: AddPayload) => void;
-  setQty: (productId: string, qty: number) => void;
-  inc: (productId: string, step?: number) => void;
-  dec: (productId: string, step?: number) => void;
-  remove: (productId: string) => void;
+  setQty: (rowId: string, qty: number) => void;
+  inc: (rowId: string, step?: number) => void;
+  dec: (rowId: string, step?: number) => void;
+  remove: (rowId: string) => void;
   clear: () => void;
 };
 
@@ -81,31 +91,69 @@ function safeJsonParse<T>(raw: string | null): T | null {
   }
 }
 
+/**
+ * Eski sepet formatı (v1 öncesi): id "256-Kırmızı" gibi productId+renk birleşimiydi
+ * ve product.id de aynı bileşik değeri taşıyordu. Ayrıştırılabilirse {productId, colorName}
+ * döner, aksi halde null (satır sessizce düşürülür).
+ */
+function parseLegacyCompositeId(id: string): { productId: string; colorName: string } | null {
+  const match = /^(\d+)-(.+)$/.exec(id);
+  if (!match) return null;
+  const colorName = match[2].trim();
+  if (!colorName) return null;
+  return { productId: match[1], colorName };
+}
+
 function normalizeStoredItems(input: any): CartItem[] {
   if (!Array.isArray(input)) return [];
   const normalized: CartItem[] = [];
 
   for (const it of input) {
     if (!it || typeof it !== "object") continue;
-    const id = typeof it.id === "string" ? it.id : null;
     const p = it.product && typeof it.product === "object" ? it.product : {};
     const title = typeof p.title === "string" ? p.title : "";
-    
-    if (!id || !title) continue;
+    if (!title) continue;
+
+    let productId: string | null = null;
+    let variant: CartItemVariant | null = null;
+    let rowId: string | null = null;
+
+    if (typeof it.productId === "string" && it.productId) {
+      // Güncel format
+      productId = it.productId;
+      variant =
+        it.variant && typeof it.variant === "object" && typeof it.variant.colorName === "string" && it.variant.colorName
+          ? { colorName: it.variant.colorName }
+          : null;
+      rowId = typeof it.id === "string" && it.id ? it.id : variant ? `${productId}-${variant.colorName}` : productId;
+    } else if (typeof it.id === "string" && it.id) {
+      // Eski format: bileşik ya da düz id olabilir
+      const legacy = parseLegacyCompositeId(it.id);
+      if (legacy) {
+        productId = legacy.productId;
+        variant = { colorName: legacy.colorName };
+      } else {
+        productId = it.id;
+        variant = null;
+      }
+      rowId = it.id;
+    }
+
+    if (!productId || !rowId) continue; // ayrıştırılamayan satır sessizce düşürülür
 
     // Her ürünün kendi min sınırını normalize et
     const minAllowed = typeof p.minQty === "number" ? p.minQty : CART_MIN_QTY;
     const qty = dynamicClamp(Number(it.qty), minAllowed);
 
     const product = {
-      id,
+      id: productId,
       title,
       imageUrl: p.imageUrl,
       wholesalePrice: p.wholesalePrice,
       minQty: p.minQty,
     } as any as Product;
 
-    normalized.push({ id, qty, product });
+    normalized.push({ id: rowId, productId, variant, qty, product });
   }
   return normalized;
 }
@@ -113,9 +161,11 @@ function normalizeStoredItems(input: any): CartItem[] {
 function toStored(items: CartItem[]): StoredCartItem[] {
   return items.map((it) => ({
     id: it.id,
+    productId: it.productId,
+    variant: it.variant ?? null,
     qty: it.qty,
     product: {
-      id: it.product?.id ?? it.id,
+      id: it.product?.id ?? it.productId,
       title: (it.product as any)?.title ?? "",
       imageUrl: (it.product as any)?.imageUrl,
       wholesalePrice: (it.product as any)?.wholesalePrice,
@@ -165,31 +215,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CartContextValue>(() => {
     const itemCount = items.length;
     const qtyCount = items.reduce((sum, it) => sum + (it.qty || 0), 0);
-    const findItem = (productId: string) => items.find((x) => x.id === productId);
+    // Not: aşağıdaki yardımcılar satır anahtarı (CartItem.id) üzerinden çalışır,
+    // saf Strapi productId üzerinden değil — sepette aynı ürünün renk varyantları
+    // ayrı satır olarak durabildiği için doğru satırı bulmak satır anahtarını gerektirir.
+    const findItem = (rowId: string) => items.find((x) => x.id === rowId);
 
-    const unitPriceOf = (productId: string) => {
-      const it = findItem(productId);
+    const unitPriceOf = (rowId: string) => {
+      const it = findItem(rowId);
       const base = it?.product?.wholesalePrice;
       return typeof base === "number" ? base : FALLBACK_UNIT_PRICE;
     };
 
-    const discountPerUnitOf = (productId: string) => {
-      const it = findItem(productId);
+    const discountPerUnitOf = (rowId: string) => {
+      const it = findItem(rowId);
       const q = it?.qty ?? CART_MIN_QTY;
       return discountPerUnitTRY(q);
     };
 
-    const effectiveUnitPriceOf = (productId: string) => {
-      const base = unitPriceOf(productId);
-      const it = findItem(productId);
+    const effectiveUnitPriceOf = (rowId: string) => {
+      const base = unitPriceOf(rowId);
+      const it = findItem(rowId);
       const q = it?.qty ?? CART_MIN_QTY;
       return effectiveUnitPriceTRY(base, q);
     };
 
-    const lineTotalOf = (productId: string) => {
-      const it = findItem(productId);
+    const lineTotalOf = (rowId: string) => {
+      const it = findItem(rowId);
       if (!it) return 0;
-      const base = unitPriceOf(productId);
+      const base = unitPriceOf(rowId);
       return effectiveUnitPriceTRY(base, it.qty) * it.qty;
     };
 
@@ -198,9 +251,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return sum + effectiveUnitPriceTRY(base, it.qty) * it.qty;
     }, 0);
 
-    const setQty = (productId: string, qty: number) => {
+    const setQty = (rowId: string, qty: number) => {
       setItems((prev) => prev.map((x) => {
-        if (x.id === productId) {
+        if (x.id === rowId) {
           const min = (x.product as any)?.minQty ?? CART_MIN_QTY;
           return { ...x, qty: dynamicClamp(qty, min) };
         }
@@ -208,17 +261,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }));
     };
 
-    const inc = (productId: string, step = CART_STEP) => {
+    const inc = (rowId: string, step = CART_STEP) => {
       setItems((prev) => prev.map((x) => {
-        if (x.id !== productId) return x;
+        if (x.id !== rowId) return x;
         const min = (x.product as any)?.minQty ?? CART_MIN_QTY;
         return { ...x, qty: dynamicClamp((x.qty || min) + step, min) };
       }));
     };
 
-    const dec = (productId: string, step = CART_STEP) => {
+    const dec = (rowId: string, step = CART_STEP) => {
       setItems((prev) => prev.map((x) => {
-        if (x.id !== productId) return x;
+        if (x.id !== rowId) return x;
         const min = (x.product as any)?.minQty ?? CART_MIN_QTY;
         return { ...x, qty: dynamicClamp((x.qty || min) - step, min) };
       }));
@@ -228,19 +281,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const minQtyRule = payload.minQty ?? CART_MIN_QTY;
       const incomingQty = dynamicClamp(payload.qty ?? minQtyRule, minQtyRule);
       const incomingBasePrice = typeof payload.price === "number" ? payload.price : FALLBACK_UNIT_PRICE;
+      const variant = payload.variant ?? null;
+      // Satır anahtarı: aynı ürünün farklı renkleri sepette ayrı satır olarak kalsın,
+      // ama backend'e giden productId (payload.id) hep saf kalır.
+      const rowId = variant?.colorName ? `${payload.id}-${variant.colorName}` : payload.id;
 
       setItems((prev) => {
-        const idx = prev.findIndex((x) => x.id === payload.id);
+        const idx = prev.findIndex((x) => x.id === rowId);
         if (idx >= 0) {
           const copy = [...prev];
           const existing = copy[idx];
           const min = (existing.product as any)?.minQty ?? CART_MIN_QTY;
           const nextQty = dynamicClamp((existing.qty || min) + incomingQty, min);
-          
-          copy[idx] = { 
-            ...existing, 
+
+          copy[idx] = {
+            ...existing,
             qty: nextQty,
-            product: { ...existing.product, wholesalePrice: incomingBasePrice, minQty: payload.minQty } 
+            product: { ...existing.product, wholesalePrice: incomingBasePrice, minQty: payload.minQty }
           };
           return copy;
         }
@@ -253,11 +310,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           minQty: payload.minQty,
         } as any as Product;
 
-        return [...prev, { id: payload.id, product, qty: incomingQty }];
+        return [...prev, { id: rowId, productId: payload.id, variant, product, qty: incomingQty }];
       });
     };
 
-    const remove = (productId: string) => setItems((prev) => prev.filter((x) => x.id !== productId));
+    const remove = (rowId: string) => setItems((prev) => prev.filter((x) => x.id !== rowId));
     const clear = () => setItems([]);
 
     return {

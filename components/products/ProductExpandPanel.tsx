@@ -70,12 +70,13 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
   const onAdd = () => {
     const qty = Math.max(minQty, Number(qtyStr) || minQty);
     addItem({
-      id: selectedVariant ? `${product.id}-${selectedVariant.ColorName}` : product.id,
+      id: product.id,
       title: `${product.title} ${selectedVariant ? `(${selectedVariant.ColorName})` : ""}`,
       price: unitPrice,
       image: activeImg,
       qty: qty,
       minQty: minQty,
+      variant: selectedVariant ? { colorName: selectedVariant.ColorName } : null,
     });
   };
 
