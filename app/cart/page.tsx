@@ -185,6 +185,7 @@ export default function CartPage() {
   const freeShipProgress = Math.min(1, subtotal / FREE_SHIPPING_THRESHOLD);
 
   const router = useRouter();
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
 
   const handleCardPayment = () => {
     if (items.length === 0) return;
@@ -354,8 +355,10 @@ export default function CartPage() {
             <div className="flex justify-between font-bold text-lg"><span>Genel toplam</span><span>{formatTry(grandTotal)}</span></div>
           </div>
           <div className="mt-6 space-y-3">
-            <button onClick={handleCardPayment} className="h-12 w-full rounded-xl bg-[#7C3AED] text-white font-semibold hover:bg-[#6D28D9] transition-colors duration-300">Kart ile Öde</button>
-            <button onClick={handleWhatsAppOrder} className="h-12 w-full rounded-xl border border-slate-300 text-slate-900 font-semibold hover:bg-slate-50 transition-colors duration-300">WhatsApp ile Sipariş</button>
+            {paymentsEnabled && (
+              <button onClick={handleCardPayment} className="h-12 w-full rounded-xl bg-[#7C3AED] text-white font-semibold hover:bg-[#6D28D9] transition-colors duration-300">Kart ile Öde</button>
+            )}
+            <button onClick={handleWhatsAppOrder} className="h-12 w-full rounded-xl bg-[#7C3AED] text-white font-semibold hover:bg-[#6D28D9] transition-colors duration-300">WhatsApp ile Sipariş</button>
           </div>
           <div className="mt-4 text-[12px] text-slate-600">Not: Adet değişiklikleri kısıtlamalara göre uygulanır.</div>
         </div>

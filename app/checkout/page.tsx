@@ -27,13 +27,19 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
+
   useEffect(() => {
+    if (!paymentsEnabled) {
+      router.replace("/cart");
+      return;
+    }
     if (hydrated && items.length === 0) {
       router.replace("/cart");
     }
-  }, [hydrated, items.length, router]);
+  }, [paymentsEnabled, hydrated, items.length, router]);
 
-  if (!hydrated || items.length === 0) {
+  if (!paymentsEnabled || !hydrated || items.length === 0) {
     return <main className="mx-auto w-full max-w-6xl px-4 py-10 bg-white text-slate-900" />;
   }
 
