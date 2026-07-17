@@ -80,6 +80,23 @@ export function getMediaUrls(media: any): string[] {
 
 export function getMediaUrl(media: any): string | null { return getMediaUrls(media)[0] ?? null; }
 
+// ✅ Bant genişliği optimizasyonu: kart/liste görünümleri için Strapi'nin küçük format varyantını kullanır (small → thumbnail → orijinal fallback zinciri)
+function pickThumbUrl(entity: any): string | null {
+  const attrs = entity?.attributes ?? entity;
+  const formats = attrs?.formats;
+  return formats?.small?.url || formats?.thumbnail?.url || attrs?.url || null;
+}
+
+export function getMediaThumbUrls(media: any): string[] {
+  if (!media) return [];
+  if (Array.isArray(media)) return media.map(pickThumbUrl).map(absMediaUrl).filter((u: string | null): u is string => typeof u === "string");
+  if (Array.isArray(media?.data)) return media.data.map(pickThumbUrl).map(absMediaUrl).filter((u: string | null): u is string => typeof u === "string");
+  const url = media?.data ? pickThumbUrl(media.data) : pickThumbUrl(media);
+  return url ? [absMediaUrl(url)!] : [];
+}
+
+export function getMediaThumbUrl(media: any): string | null { return getMediaThumbUrls(media)[0] ?? null; }
+
 export function getCategorySlug(category: any): string | null {
   if (!category) return null;
   return category?.data?.attributes?.slug || category?.slug || null;
@@ -188,14 +205,21 @@ export async function getCatalogProducts(): Promise<any[]> {
       const cat = unwrapRelation(x?.category_product);
       const imgField = x?.image;
       const imageUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaUrl(m)).filter((u: string | null): u is string => typeof u === "string");
-      const mappedVariants = Array.isArray(x?.variants) 
-        ? x.variants.map((v: any) => ({
-            ColorName: v.ColorName || "",
-            ColorCode: v.ColorCode || "",
-            VariantImage: { url: getMediaUrl(Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage) || "" } 
-          })).filter((v: any) => v.ColorName !== "")
+      const imageThumbUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaThumbUrl(m)).filter((u: string | null): u is string => typeof u === "string");
+      const mappedVariants = Array.isArray(x?.variants)
+        ? x.variants.map((v: any) => {
+            const variantImg = Array.isArray(v.VariantImage) ? v.VariantImage[0] : v.VariantImage;
+            return {
+              ColorName: v.ColorName || "",
+              ColorCode: v.ColorCode || "",
+              VariantImage: {
+                url: getMediaUrl(variantImg) || "",
+                thumbUrl: getMediaThumbUrl(variantImg) || "",
+              },
+            };
+          }).filter((v: any) => v.ColorName !== "")
         : [];
-        
+
       return {
         id: String(x?.id ?? x?.documentId ?? ""),
         title: x?.title || x?.Title || "",
@@ -203,7 +227,8 @@ export async function getCatalogProducts(): Promise<any[]> {
         featured: !!x?.featured,
         imageUrls,
         imageUrl: imageUrls[0] || "",
-        image: imageUrls[0] || "", 
+        imageThumbUrl: imageThumbUrls[0] || imageUrls[0] || "",
+        image: imageUrls[0] || "",
         wholesalePrice: x?.wholesalePrice ?? x?.WholesalePrice ?? x?.wholesale_price,
         minQty: x?.minQty ?? x?.MinQty ?? x?.min_qty ?? 1,
         bullets: normalizeStringArray(x?.bullets ?? x?.Bullets),

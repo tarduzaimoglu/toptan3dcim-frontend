@@ -14,7 +14,8 @@ const SITE_MORU = "#7C3AED";
 
 function resolveThumbSrc(product: any) {
   const target = product.attributes || product;
-  const raw = (typeof target?.imageUrl === "string" && target.imageUrl.trim() && target.imageUrl) ||
+  const raw = (typeof target?.imageThumbUrl === "string" && target.imageThumbUrl.trim() && target.imageThumbUrl) ||
+              (typeof target?.imageUrl === "string" && target.imageUrl.trim() && target.imageUrl) ||
               (typeof target?.image === "string" && target.image.trim() && target.image);
 
   return raw || "/products/placeholder.png";

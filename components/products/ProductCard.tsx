@@ -44,6 +44,7 @@ function getClosestStandardColorId(hex: string) {
 
 function resolveThumbSrc(product: any) {
   const raw =
+    (typeof product?.imageThumbUrl === "string" && product.imageThumbUrl.trim() && product.imageThumbUrl) ||
     (typeof product?.imageUrl === "string" && product.imageUrl.trim() && product.imageUrl) ||
     (typeof product?.image === "string" && product.image.trim() && product.image);
 
@@ -72,7 +73,7 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
       });
 
       if (matchingVariant) {
-        return matchingVariant.VariantImage.url;
+        return matchingVariant.VariantImage.thumbUrl || matchingVariant.VariantImage.url;
       }
     }
     
