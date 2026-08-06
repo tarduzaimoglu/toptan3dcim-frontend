@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation"; 
-import { useCart } from "@/components/cart/CartContext"; 
+import { useCart } from "@/components/cart/CartContext";
+import { SHOW_PRICES } from "@/lib/config";
 
 const navItems = [
   { label: "Anasayfa", href: "/" },
@@ -12,11 +13,15 @@ const navItems = [
   { label: "İletişim", href: "/contact" },
 ];
 
-const PROMOS = [
-  "🚀 1500₺ Üzeri Kargo Ücretsiz",
-  "💳 9 Aya Varan Taksit İmkânı",
-  "💸 Tüm Ürünlerde %3 Havale/EFT İndirimi",
-];
+// NOT: Rakam/oran içeren promosyon satırları SHOW_PRICES=false iken gizlenir;
+// lib/config.ts içinde SHOW_PRICES=true yapılınca eski haliyle geri döner.
+const PROMOS = SHOW_PRICES
+  ? [
+      "🚀 1500₺ Üzeri Kargo Ücretsiz",
+      "💳 9 Aya Varan Taksit İmkânı",
+      "💸 Tüm Ürünlerde %3 Havale/EFT İndirimi",
+    ]
+  : ["💳 9 Aya Varan Taksit İmkânı"];
 
 const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 

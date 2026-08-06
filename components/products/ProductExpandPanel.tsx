@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import type { Product } from "@/lib/products/types";
 import { useCart, CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/CartContext";
+import { SHOW_PRICES, PRICE_HIDDEN_TEXT } from "@/lib/config";
 
 // --- YARDIMCI FONKSİYONLAR ---
 function whatsappUrlForProduct(title: string) {
@@ -157,9 +158,15 @@ export function ProductExpandPanel({ product, onClose }: { product: Product; onC
               <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-2 pr-8">{product.title}</h2>
               
               <div className="mb-6 flex items-center gap-2.5 flex-wrap">
-                <span className="text-xl md:text-2xl font-black text-[#FF5733]">
-                  {unitPrice} TL <span className="text-sm text-gray-400 font-normal">/ adet</span>
-                </span>
+                {SHOW_PRICES ? (
+                  <span className="text-xl md:text-2xl font-black text-[#FF5733]">
+                    {unitPrice} TL <span className="text-sm text-gray-400 font-normal">/ adet</span>
+                  </span>
+                ) : (
+                  <span className="text-sm md:text-base font-bold text-[#FF5733]">
+                    {PRICE_HIDDEN_TEXT}
+                  </span>
+                )}
                 <span className="text-[11px] md:text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60 shadow-inner">
                   {minQty} Adet / Min
                 </span>

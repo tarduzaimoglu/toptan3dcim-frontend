@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Filter, X, ChevronDown, Check, Search, ArrowUpDown } from "lucide-react";
+import { SHOW_PRICES } from "@/lib/config";
 
 interface ColorOption {
   id: string;
@@ -123,8 +124,12 @@ function FilterContent({
           className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none cursor-pointer focus:ring-2 focus:ring-[#FF5733]/20 focus:border-[#FF5733]"
         >
           <option value="newest">En Yeniler</option>
-          <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
-          <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
+          {SHOW_PRICES && (
+            <>
+              <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
+              <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
+            </>
+          )}
           <option value="minqty_asc">Min. Sipariş: Azdan Çoğa</option>
           <option value="minqty_desc">Min. Sipariş: Çoktan Aza</option>
         </select>
@@ -269,8 +274,12 @@ export default function ProductFilter({
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             >
               <option value="newest">En Yeniler</option>
-              <option value="price_asc">Fiyat (Artan)</option>
-              <option value="price_desc">Fiyat (Azalan)</option>
+              {SHOW_PRICES && (
+                <>
+                  <option value="price_asc">Fiyat (Artan)</option>
+                  <option value="price_desc">Fiyat (Azalan)</option>
+                </>
+              )}
               <option value="minqty_asc">Min. Sipariş (Artan)</option>
               <option value="minqty_desc">Min. Sipariş (Azalan)</option>
             </select>

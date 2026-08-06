@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import Image from "next/image";
 import type { Product } from "@/lib/products/types";
 import { CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/CartContext";
+import { SHOW_PRICES, PRICE_HIDDEN_TEXT } from "@/lib/config";
 
 // --- RENK EŞLEŞTİRME YARDIMCILARI ---
 const STANDARD_COLORS = [
@@ -135,13 +136,24 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
         </div>
 
         <div>
-          <div className="mt-2 flex items-end justify-between gap-3">
-            <div className="text-[13px] font-semibold text-slate-900">{priceText}</div>
-            <div className="text-[11px] text-slate-500">
-              {/* 🛠️ DÜZELTME: Değişken minQtyValue olarak güncellendi */}
-              Min. <span className="font-semibold text-slate-700">{minQtyValue}</span>
+          {SHOW_PRICES ? (
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <div className="text-[13px] font-semibold text-slate-900">{priceText}</div>
+              <div className="text-[11px] text-slate-500">
+                {/* 🛠️ DÜZELTME: Değişken minQtyValue olarak güncellendi */}
+                Min. <span className="font-semibold text-slate-700">{minQtyValue}</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mt-2 flex flex-col gap-1">
+              <div className="text-[11.5px] font-medium leading-snug text-slate-600">
+                {PRICE_HIDDEN_TEXT}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Min. <span className="font-semibold text-slate-700">{minQtyValue}</span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-3 text-[12px] font-medium text-[#ff7a00] opacity-90 transition-all group-hover:opacity-100 group-hover:text-[#e66e00]">
             Detayları görüntüle →

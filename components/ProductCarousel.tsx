@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, EffectCoverflow } from "swiper/modules";
 import Link from "next/link";
 import Image from "next/image";
+import { SHOW_PRICES, PRICE_HIDDEN_TEXT } from "@/lib/config";
 
 import "swiper/css";
 import "swiper/css/effect-coverflow";
@@ -74,10 +75,16 @@ export default function ProductCarousel({ products }: { products: any[] }) {
                     <h3 className="text-xs md:text-sm font-bold text-slate-900 line-clamp-1 mb-1">
                       {attr.title || attr.Title}
                     </h3>
-                    <div className="flex items-center justify-center gap-1 font-black text-sm">
-                      <span style={{ color: SITE_MORU }}>{price} TL</span>
-                      <span className="text-slate-400 font-normal">/ Adet</span>
-                    </div>
+                    {SHOW_PRICES ? (
+                      <div className="flex items-center justify-center gap-1 font-black text-sm">
+                        <span style={{ color: SITE_MORU }}>{price} TL</span>
+                        <span className="text-slate-400 font-normal">/ Adet</span>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] font-medium leading-snug text-slate-500">
+                        {PRICE_HIDDEN_TEXT}
+                      </div>
+                    )}
                   </div>
 
                 </div>

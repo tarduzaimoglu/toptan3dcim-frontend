@@ -15,6 +15,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
   SHIPPING_FEE,
 } from "@/lib/pricing";
+import { SHOW_PRICES, PRICE_HIDDEN_TEXT } from "@/lib/config";
 
 const WHATSAPP_PHONE = "905465868005";
 
@@ -196,25 +197,42 @@ export default function CartPage() {
     if (items.length === 0) return;
 
     // 1. WhatsApp Mesajını Hazırla
-    const lines = mapped
-      .map((x, i) => {
-        const hasDisc = x.discountPerUnit > 0;
-        const unitText = hasDisc
-          ? `${formatTry(x.unitEffective)} (indirimli) | ${formatTry(x.unitBase)} (liste)`
-          : `${formatTry(x.unitBase)}`;
-        return `${i + 1}) ${x.title} — ${x.qty} adet — Birim: ${unitText} — Satır: ${formatTry(x.total)}`;
-      })
-      .join("\n");
+    // NOT: Fiyatlı otomatik mesaj metni SHOW_PRICES=false iken devre dışı;
+    // lib/config.ts içinde SHOW_PRICES=true yapılınca eski haliyle geri döner.
+    const message = SHOW_PRICES
+      ? (() => {
+          const lines = mapped
+            .map((x, i) => {
+              const hasDisc = x.discountPerUnit > 0;
+              const unitText = hasDisc
+                ? `${formatTry(x.unitEffective)} (indirimli) | ${formatTry(x.unitBase)} (liste)`
+                : `${formatTry(x.unitBase)}`;
+              return `${i + 1}) ${x.title} — ${x.qty} adet — Birim: ${unitText} — Satır: ${formatTry(x.total)}`;
+            })
+            .join("\n");
 
-    const message =
-      `Merhaba, sepet özetimi iletiyorum.\n\n` +
-      `${lines}\n\n` +
-      `Ara Toplam (indirimli, KDV dahil): ${formatTry(subtotal)}\n` +
-      `KDV (fiyatlara dahildir): ${formatTry(vatInfo)}\n` +
-      `İndirim Kazancı: ${formatTry(savings)}\n` +
-      `Kargo: ${shippingText}\n` +
-      `Genel Toplam: ${formatTry(grandTotal)}\n\n` +
-      `Not: PDF dosyasını bu mesaja ek olarak göndereceğim.`;
+          return (
+            `Merhaba, sepet özetimi iletiyorum.\n\n` +
+            `${lines}\n\n` +
+            `Ara Toplam (indirimli, KDV dahil): ${formatTry(subtotal)}\n` +
+            `KDV (fiyatlara dahildir): ${formatTry(vatInfo)}\n` +
+            `İndirim Kazancı: ${formatTry(savings)}\n` +
+            `Kargo: ${shippingText}\n` +
+            `Genel Toplam: ${formatTry(grandTotal)}\n\n` +
+            `Not: PDF dosyasını bu mesaja ek olarak göndereceğim.`
+          );
+        })()
+      : (() => {
+          const lines = mapped
+            .map((x, i) => `${i + 1}) ${x.title} — ${x.qty} adet`)
+            .join("\n");
+
+          return (
+            `Merhaba, sepet özetimi iletiyorum.\n\n` +
+            `${lines}\n\n` +
+            `${PRICE_HIDDEN_TEXT}.`
+          );
+        })();
 
     const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
     
@@ -231,28 +249,32 @@ export default function CartPage() {
     }
 
     // 3. PDF Penceresini 1 saniye sonra aç (WhatsApp penceresinin açılışını bozmaması için)
-    setTimeout(() => {
-        const html = buildPrintableHtml({
-          items: mapped,
-          subtotal,
-          vatInfo,
-          grandTotal,
-          savings,
-          shippingFee,
-          shippingText,
-          freeShippingHint: isFreeShipping ? undefined : freeShippingHint,
-        });
+    // NOT: Fiyat detaylı yazdırılabilir föy SHOW_PRICES=false iken üretilmiyor;
+    // lib/config.ts içinde SHOW_PRICES=true yapılınca eski haliyle geri döner.
+    if (SHOW_PRICES) {
+      setTimeout(() => {
+          const html = buildPrintableHtml({
+            items: mapped,
+            subtotal,
+            vatInfo,
+            grandTotal,
+            savings,
+            shippingFee,
+            shippingText,
+            freeShippingHint: isFreeShipping ? undefined : freeShippingHint,
+          });
 
-        const printWindow = window.open("", "_blank", "width=900,height=700");
-        if (printWindow) {
-          printWindow.document.open();
-          printWindow.document.write(html);
-          printWindow.document.close();
-          setTimeout(() => {
-            try { printWindow.focus(); printWindow.print(); } catch {}
-          }, 500);
-        }
-    }, 1000);
+          const printWindow = window.open("", "_blank", "width=900,height=700");
+          if (printWindow) {
+            printWindow.document.open();
+            printWindow.document.write(html);
+            printWindow.document.close();
+            setTimeout(() => {
+              try { printWindow.focus(); printWindow.print(); } catch {}
+            }, 500);
+          }
+      }, 1000);
+    }
   };
 
   return (
@@ -298,19 +320,23 @@ export default function CartPage() {
                         <img src={img} alt={title} className="h-14 w-14 rounded-xl object-cover" />
                         <div>
                           <div className="text-[16px] font-semibold">{title}</div>
-                          <div className="mt-1 text-[13px] text-slate-700">
-                            Birim: <span className="font-semibold">{formatTry(unitEffective)}</span>
-                            {disc > 0 && <span className="ml-2 text-slate-500 line-through text-xs">{formatTry(unitBase)}</span>}
-                          </div>
+                          {SHOW_PRICES && (
+                            <div className="mt-1 text-[13px] text-slate-700">
+                              Birim: <span className="font-semibold">{formatTry(unitEffective)}</span>
+                              {disc > 0 && <span className="ml-2 text-slate-500 line-through text-xs">{formatTry(unitBase)}</span>}
+                            </div>
+                          )}
                           <div className="mt-1 text-[12px] text-slate-500">
                             Min: <span className="font-medium">{minQty}</span> • Max: <span className="font-medium">{CART_MAX_QTY}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[13px] text-slate-600">Satır Toplam</div>
-                        <div className="text-[20px] font-semibold">{formatTry(rowTotal)}</div>
-                      </div>
+                      {SHOW_PRICES && (
+                        <div className="text-right">
+                          <div className="text-[13px] text-slate-600">Satır Toplam</div>
+                          <div className="text-[20px] font-semibold">{formatTry(rowTotal)}</div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 flex items-center justify-between">
@@ -334,12 +360,14 @@ export default function CartPage() {
                   </div>
                 );
               })}
-              <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="text-[14px] font-semibold">{isFreeShipping ? "Ücretsiz kargo aktif 🎉" : "Ücretsiz kargoya yaklaştın"}</div>
-                <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
-                  <div className="h-full bg-emerald-500 transition-all" style={{ width: `${Math.round(freeShipProgress * 100)}%` }} />
+              {SHOW_PRICES && (
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="text-[14px] font-semibold">{isFreeShipping ? "Ücretsiz kargo aktif 🎉" : "Ücretsiz kargoya yaklaştın"}</div>
+                  <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
+                    <div className="h-full bg-emerald-500 transition-all" style={{ width: `${Math.round(freeShipProgress * 100)}%` }} />
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -347,12 +375,23 @@ export default function CartPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 lg:sticky lg:top-24 h-fit">
           <div className="text-[18px] font-semibold">Özet</div>
           <div className="mt-5 space-y-3 text-[14px]">
-            <div className="flex justify-between"><span>Ara toplam</span><span>{formatTry(subtotal)}</span></div>
-            <div className="flex justify-between text-slate-500 text-[13px]"><span>KDV (fiyatlara dahildir)</span><span>{formatTry(vatInfo)}</span></div>
-            <div className="flex justify-between text-emerald-700"><span>İndirim kazancı</span><span>{formatTry(savings)}</span></div>
-            <div className="flex justify-between"><span>Kargo</span><span className={isFreeShipping ? "text-emerald-700 font-bold" : ""}>{shippingText}</span></div>
-            <div className="h-px bg-slate-200 my-2" />
-            <div className="flex justify-between font-bold text-lg"><span>Genel toplam</span><span>{formatTry(grandTotal)}</span></div>
+            {SHOW_PRICES ? (
+              <>
+                <div className="flex justify-between"><span>Ara toplam</span><span>{formatTry(subtotal)}</span></div>
+                <div className="flex justify-between text-slate-500 text-[13px]"><span>KDV (fiyatlara dahildir)</span><span>{formatTry(vatInfo)}</span></div>
+                <div className="flex justify-between text-emerald-700"><span>İndirim kazancı</span><span>{formatTry(savings)}</span></div>
+                <div className="flex justify-between"><span>Kargo</span><span className={isFreeShipping ? "text-emerald-700 font-bold" : ""}>{shippingText}</span></div>
+                <div className="h-px bg-slate-200 my-2" />
+                <div className="flex justify-between font-bold text-lg"><span>Genel toplam</span><span>{formatTry(grandTotal)}</span></div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between"><span>Çeşit</span><span className="font-semibold">{varietyCount}</span></div>
+                <div className="flex justify-between"><span>Toplam adet</span><span className="font-semibold">{qtyCount}</span></div>
+                <div className="h-px bg-slate-200 my-2" />
+                <div className="text-slate-600 text-[13px]">{PRICE_HIDDEN_TEXT}</div>
+              </>
+            )}
           </div>
           <div className="mt-6 space-y-3">
             {paymentsEnabled && (

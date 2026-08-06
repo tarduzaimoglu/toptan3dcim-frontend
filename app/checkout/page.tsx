@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { useCart } from "@/components/cart/CartContext";
 import { vatInclusiveAmount, shippingFeeFor } from "@/lib/pricing";
+import { SHOW_PRICES, PRICE_HIDDEN_TEXT } from "@/lib/config";
 
 const formatTry = (n: number) =>
   new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(n);
@@ -229,18 +230,24 @@ export default function CheckoutPage() {
                 <span className="text-slate-700">
                   {it.product?.title ?? "Ürün"} × {it.qty}
                 </span>
-                <span className="font-semibold whitespace-nowrap">{formatTry(lineTotalOf(it.id))}</span>
+                {SHOW_PRICES && (
+                  <span className="font-semibold whitespace-nowrap">{formatTry(lineTotalOf(it.id))}</span>
+                )}
               </div>
             ))}
           </div>
           <div className="h-px bg-slate-200 my-4" />
-          <div className="space-y-3 text-[14px]">
-            <div className="flex justify-between"><span>Ara toplam</span><span>{formatTry(subtotal)}</span></div>
-            <div className="flex justify-between text-slate-500 text-[13px]"><span>KDV (fiyatlara dahildir)</span><span>{formatTry(vatInfo)}</span></div>
-            <div className="flex justify-between"><span>Kargo</span><span className={shippingFee === 0 ? "text-emerald-700 font-bold" : ""}>{shippingFee === 0 ? "Ücretsiz" : formatTry(shippingFee)}</span></div>
-            <div className="h-px bg-slate-200 my-2" />
-            <div className="flex justify-between font-bold text-lg"><span>Genel toplam</span><span>{formatTry(grandTotal)}</span></div>
-          </div>
+          {SHOW_PRICES ? (
+            <div className="space-y-3 text-[14px]">
+              <div className="flex justify-between"><span>Ara toplam</span><span>{formatTry(subtotal)}</span></div>
+              <div className="flex justify-between text-slate-500 text-[13px]"><span>KDV (fiyatlara dahildir)</span><span>{formatTry(vatInfo)}</span></div>
+              <div className="flex justify-between"><span>Kargo</span><span className={shippingFee === 0 ? "text-emerald-700 font-bold" : ""}>{shippingFee === 0 ? "Ücretsiz" : formatTry(shippingFee)}</span></div>
+              <div className="h-px bg-slate-200 my-2" />
+              <div className="flex justify-between font-bold text-lg"><span>Genel toplam</span><span>{formatTry(grandTotal)}</span></div>
+            </div>
+          ) : (
+            <div className="text-[13px] text-slate-600">{PRICE_HIDDEN_TEXT}</div>
+          )}
         </div>
       </div>
     </main>
