@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "kesiolabs-slave1.tail4be241.ts.net",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
         hostname: "*.up.railway.app", // Railway üzerindeki tüm alt alan adlarına izin verir
       },
       {
