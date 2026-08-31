@@ -66,8 +66,14 @@ export async function strapiFetch<T>(path: string, init?: RequestInit & { revali
 
 function absMediaUrl(maybeRelativeUrl?: string | null) {
   if (!maybeRelativeUrl) return null;
-  if (typeof maybeRelativeUrl === "string" && maybeRelativeUrl.startsWith("http")) return maybeRelativeUrl;
-  return `${STRAPI_URL}${maybeRelativeUrl}`;
+  if (maybeRelativeUrl.startsWith("/uploads/")) return `/backend${maybeRelativeUrl}`;
+  try {
+    const url = new URL(maybeRelativeUrl);
+    if (url.origin === "https://kesiolabs-slave1.tail4be241.ts.net" && url.pathname.startsWith("/uploads/")) {
+      return `/backend${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {}
+  return maybeRelativeUrl;
 }
 
 export function getMediaUrls(media: any): string[] {

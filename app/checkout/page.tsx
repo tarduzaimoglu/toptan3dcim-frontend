@@ -67,11 +67,9 @@ export default function CheckoutPage() {
     setErrorMsg(null);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
       let res: Response;
       try {
-        res = await fetch(`${backendUrl}/api/payment/initiate`, {
+        res = await fetch("/backend/api/payment/initiate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

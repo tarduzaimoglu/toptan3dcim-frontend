@@ -40,9 +40,15 @@ function getMediaUrl(media: any): string | null {
   return null;
 }
 
-function makeFullUrl(url: string, baseUrl: string): string {
-  if (url.startsWith("http")) return url;
-  return `${baseUrl}${url}`;
+function makeFullUrl(url: string): string {
+  if (url.startsWith("/uploads/")) return `/backend${url}`;
+  try {
+    const parsed = new URL(url);
+    if (parsed.origin === "https://kesiolabs-slave1.tail4be241.ts.net" && parsed.pathname.startsWith("/uploads/")) {
+      return `/backend${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {}
+  return url;
 }
 
 function normalizeLink(link?: string): string {
@@ -56,9 +62,6 @@ function normalizeLink(link?: string): string {
 }
 
 export default function HeroBanner({ banners }: { banners: any[] }) {
-  const STRAPI_URL =
-    process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337";
-
   if (!banners || banners.length === 0) return null;
 
   const validBanners = banners
@@ -71,9 +74,9 @@ export default function HeroBanner({ banners }: { banners: any[] }) {
 
       if (!desktopImg) return null;
 
-      const fullDesktopUrl = makeFullUrl(desktopImg, STRAPI_URL);
+      const fullDesktopUrl = makeFullUrl(desktopImg);
       const fullMobileUrl = mobileImg
-        ? makeFullUrl(mobileImg, STRAPI_URL)
+        ? makeFullUrl(mobileImg)
         : fullDesktopUrl;
 
       return {

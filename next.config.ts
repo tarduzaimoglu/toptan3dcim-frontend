@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/backend/:path*",
+        destination: "https://kesiolabs-slave1.tail4be241.ts.net/:path*",
+      },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
