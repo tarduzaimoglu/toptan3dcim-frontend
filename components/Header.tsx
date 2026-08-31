@@ -9,7 +9,7 @@ import { SHOW_PRICES } from "@/lib/config";
 const navItems = [
   { label: "Anasayfa", href: "/" },
   { label: "Ürün Kataloğu", href: "/products" },
-  { label: "Özel Sipariş", href: "https://kesiolabs.com/quote" },
+  { label: "Teklif Al", href: "/teklif-al" },
   { label: "İletişim", href: "/contact" },
 ];
 
@@ -49,8 +49,7 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Evreler: idle -> active (iç sayfa mor geçiş) -> leaving -> kesio (Kesiolabs endüstriyel geçiş)
-  const [navState, setNavState] = useState<'idle' | 'active' | 'leaving' | 'kesio'>('idle');
+  const [navState, setNavState] = useState<'idle' | 'active' | 'leaving'>('idle');
   
   const pathname = usePathname();
   const router = useRouter();
@@ -71,19 +70,6 @@ export default function Header() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (pathname === href) return; 
 
-    // 🛠️ KESIOLABS INTERCEPT: Eğer link dış bağlantı Kesiolabs ise özel teknoloji portalı geçişini tetikle
-    if (href.includes("kesiolabs.com")) {
-      e.preventDefault();
-      setOpen(false);
-      setNavState('kesio');
-      
-      // Kullanıcının sinematik marka geçişini deneyimlemesi için 1.2 saniye (1200ms) bekletip yönlendiriyoruz
-      setTimeout(() => {
-        window.location.href = href;
-      }, 1200);
-      return;
-    }
-    
     if (href.startsWith("http")) return; // Farklı bir dış link senaryosu için koruma
     
     e.preventDefault(); 
@@ -223,56 +209,6 @@ export default function Header() {
             <span className="text-4xl sm:text-6xl font-black italic text-white">TOPTAN</span>
             <span className="text-4xl sm:text-6xl font-black italic text-[#FF7A00]">3D</span>
             <span className="text-2xl sm:text-4xl font-black italic text-white mt-5">CIM</span>
-          </div>
-        </div>
-      )}
-
-      {/* 🚀 KESIOLABS GÜVENLİ DIŞ BAĞLANTI GEÇİŞ EKRANI (1200ms) */}
-      {navState === 'kesio' && (
-        <div 
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0B132B]/90 backdrop-blur-3xl animate-in fade-in duration-300"
-        >
-          <div className="text-center flex flex-col items-center gap-6 max-w-md px-6 animate-pop-in">
-            
-            {/* Üst Bağlantı Köprüsü Sinyali */}
-            <div className="flex items-center gap-3 opacity-60 text-white text-[10px] tracking-widest uppercase font-black">
-              <span>TOPTAN3DCİM</span>
-              <svg className="w-4 h-4 animate-pulse text-[#FF7A00]" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-              <span>KESIOLABS</span>
-            </div>
-
-            {/* Kesiolabs Orijinal Logotür Canlandırması */}
-            <div className="flex items-center relative z-10 drop-shadow-[0_0_35px_rgba(0,195,255,0.3)]">
-              {/* KESIO - Turkuaz / Siyan - pr-1.5 Kesilme Koruması */}
-              <span 
-                className="inline-block pr-1.5 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#00C3FF] username animate-float-wave"
-                style={{ animationDelay: '0s' }}
-              >
-                KESIO
-              </span>
-              {/* L - Turuncu - pr-1 Kesilme Koruması */}
-              <span 
-                className="inline-block pr-1 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#FFA500] animate-float-wave drop-shadow-[0_0_15px_rgba(255,165,0,0.4)]"
-                style={{ animationDelay: '0.15s' }}
-              >
-                L
-              </span>
-              {/* ABS - Derin Canlı Mavi - pr-2 Kesilme Koruması */}
-              <span 
-                className="inline-block pr-2 text-4xl sm:text-6xl font-black italic tracking-tighter text-[#2266FF] animate-float-wave"
-                style={{ animationDelay: '0.3s' }}
-              >
-                ABS
-              </span>
-            </div>
-
-            {/* Endüstriyel Bilgilendirme Altyazısı */}
-            <p className="text-xs sm:text-sm text-slate-300/80 font-bold leading-relaxed max-w-xs animate-pulse">
-              Endüstriyel imalat ve ileri seviye 3D modelleme sipariş portalına güvenli geçiş yapılıyor...
-            </p>
-
           </div>
         </div>
       )}
