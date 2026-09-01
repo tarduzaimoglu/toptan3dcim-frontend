@@ -10,6 +10,7 @@ const navItems = [
   { label: "Anasayfa", href: "/" },
   { label: "Ürün Kataloğu", href: "/products" },
   { label: "Teklif Al", href: "/teklif-al" },
+  { label: "Firmanıza Özel Ürünler", href: "/custom-products" },
   { label: "İletişim", href: "/contact" },
 ];
 
@@ -120,7 +121,7 @@ export default function Header() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-10">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -128,7 +129,7 @@ export default function Header() {
                   key={item.label}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className={`relative text-[14px] font-bold transition-colors ${
+                  className={`relative whitespace-nowrap text-[13px] xl:text-[14px] font-bold transition-colors ${
                     isActive ? "text-[#7C3AED]" : "text-slate-600 hover:text-slate-900"
                   } group`}
                 >
@@ -150,7 +151,7 @@ export default function Header() {
               className="group relative flex items-center gap-1.5 sm:gap-2.5 rounded-2xl bg-[#7C3AED] px-3 sm:px-5 py-2 sm:py-2.5 text-sm font-bold text-white shadow-xl shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:bg-[#6b1add]"
             >
               <ShoppingCartIcon className="transition-transform group-hover:scale-110" />
-              <span className="hidden md:inline">Sepetim</span>
+              <span className="hidden lg:inline">Sepetim</span>
               
               {cartCount > 0 && (
                 <span className="flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-white text-[11px] font-black text-[#7C3AED] animate-in zoom-in duration-300">
@@ -161,7 +162,7 @@ export default function Header() {
 
             <button
               type="button"
-              className="md:hidden flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-700 shrink-0"
+              className="lg:hidden flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-700 shrink-0"
               onClick={() => setOpen((v) => !v)}
             >
               <AnimatedBurger open={open} />
@@ -170,7 +171,7 @@ export default function Header() {
         </div>
 
         {open && (
-          <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-2xl md:hidden animate-in fade-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto overscroll-contain">
+          <div className="absolute top-full left-0 w-full bg-white/95 backdrop-blur-2xl border-b border-slate-200 shadow-2xl lg:hidden animate-in fade-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto overscroll-contain">
             <nav className="flex flex-col p-6 space-y-2 pb-10">
               {navItems.map((item, idx) => (
                 <Link

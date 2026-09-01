@@ -254,9 +254,8 @@ export async function getCustomProductTypes(): Promise<any[]> {
   const res = await strapiFetch<any>(path, { revalidate: CACHE_REVALIDATE });
   const items = unwrapCollection(res);
   return items.map((x: AnyObj) => ({
-    id: String(x?.id ?? ""),
+    id: String(x?.slug ?? ""),
     title: x?.title ?? "",
-    slug: x?.slug ?? "",
     image: getMediaUrl(x?.image) || "/products/placeholder.png",
-  }));
+  })).filter((x: { id: string; title: string }) => x.id && x.title);
 }
