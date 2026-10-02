@@ -11,7 +11,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
   if (result.status !== 200) {
     unavailableCode ||= result.body?.code || '';
     const messages: Record<string, string> = {
-      ACCOUNT_BFF_FEATURE_DISABLED: 'Hesap hizmeti ön yüzde kapalı olarak yapılandırılmış.',
+      ACCOUNT_BFF_FEATURE_DISABLED: 'Hesap hizmeti şu anda kullanıma açılmamış.',
       ACCOUNT_FEATURE_DISABLED: 'Hesap girişi şu anda bakım nedeniyle kapalı.',
       ACCOUNT_BACKEND_URL_MISSING: 'Hesap servisi bağlantısı yapılandırılmamış.',
       ACCOUNT_BFF_SECRET_MISSING_OR_INVALID: 'Hesap servisi güvenli bağlantı ayarı eksik.',
