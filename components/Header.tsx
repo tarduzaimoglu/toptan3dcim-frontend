@@ -16,15 +16,9 @@ const navItems = [
   { label: "İletişim", href: "/contact" },
 ];
 
-// NOT: Rakam/oran içeren promosyon satırları SHOW_PRICES=false iken gizlenir;
-// lib/config.ts içinde SHOW_PRICES=true yapılınca eski haliyle geri döner.
-const PROMOS = SHOW_PRICES
-  ? [
-      "🚀 1500₺ Üzeri Kargo Ücretsiz",
-      "💳 9 Aya Varan Taksit İmkânı",
-      "💸 Tüm Ürünlerde %3 Havale/EFT İndirimi",
-    ]
-  : ["💳 9 Aya Varan Taksit İmkânı"];
+// Kartlı ödeme kapalıyken taksit mesajı gösterilmez. Var olan kargo duyurusu
+// yalnızca genel fiyat görünürlüğü açık olduğunda gösterilmeye devam eder.
+const PROMOS = SHOW_PRICES ? ["🚀 1500₺ Üzeri Kargo Ücretsiz"] : [];
 
 const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 
@@ -95,7 +89,7 @@ export default function Header() {
 
   return (
     <>
-      <div className="relative flex overflow-hidden bg-slate-900 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white/90 border-b border-white/10">
+      {PROMOS.length > 0 && <div className="relative flex overflow-hidden bg-slate-900 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white/90 border-b border-white/10">
         <div className="animate-marquee flex whitespace-nowrap">
           {[...PROMOS, ...PROMOS, ...PROMOS].map((promo, index) => (
             <span key={index} className="mx-12 flex items-center shrink-0">
@@ -104,7 +98,7 @@ export default function Header() {
             </span>
           ))}
         </div>
-      </div>
+      </div>}
 
       <header
         className={`sticky top-0 z-50 w-full transition-all duration-500 ${

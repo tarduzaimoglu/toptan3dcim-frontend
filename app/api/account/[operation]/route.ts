@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { accountBackend, accountConfig, cookieOptions, sessionCookie, csrfCookie } from '@/lib/server/account';
+import { AccountServiceError, accountBackend, accountConfig, cookieOptions, sessionCookie, csrfCookie } from '@/lib/server/account';
 import { csrfTicket, validCsrf, validOrigin } from '@/lib/server/account-security';
 import crypto from 'node:crypto';
 
@@ -10,6 +10,11 @@ const writeOperations = new Set(['register', 'login', 'logout', 'forgot', 'resen
 const guestCookie = () => process.env.NODE_ENV === 'production' ? '__Host-checkout-guest' : 'checkout-guest';
 type Context = { params: Promise<{ operation: string }> };
 const json = (body: unknown, status = 200) => NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
+function unavailable(error: unknown, operation: string) {
+  const code = error instanceof AccountServiceError ? error.code : error instanceof TypeError || (error instanceof Error && ['AbortError', 'TimeoutError'].includes(error.name)) ? 'ACCOUNT_BACKEND_UNREACHABLE' : 'ACCOUNT_REQUEST_FAILED';
+  console.error(`[customer-account] ${operation} ${code}`);
+  return json({ message: 'Hesap hizmetine şu anda erişilemiyor. Lütfen daha sonra tekrar deneyin.', code }, 503);
+}
 
 function clientKey(request: NextRequest) {
   // Enable only behind a proxy which overwrites (not appends client-supplied) this header.
@@ -34,7 +39,7 @@ export async function GET(request: NextRequest, context: Context) {
     const response = json(result.body, result.status);
     if (result.status === 401) response.cookies.set(sessionCookie(), '', { ...cookieOptions, maxAge: 0 });
     return response;
-  } catch { return json({ message: 'Hesap hizmetine şu anda erişilemiyor.' }, 503); }
+  } catch (error) { return unavailable(error, 'GET'); }
 }
 export async function POST(request: NextRequest, context: Context) {
   try {
@@ -80,5 +85,5 @@ export async function POST(request: NextRequest, context: Context) {
       response.cookies.set(guestCookie(), '', { ...cookieOptions, maxAge: 0 });
     }
     return response;
-  } catch { return json({ message: 'Hesap hizmetine şu anda erişilemiyor. Lütfen tekrar deneyin.' }, 503); }
+  } catch (error) { return unavailable(error, 'POST'); }
 }
