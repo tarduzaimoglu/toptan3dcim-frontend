@@ -12,7 +12,7 @@ export function accountConfig() {
   const backend = process.env.CUSTOMER_STRAPI_INTERNAL_URL;
   const secret = process.env.CUSTOMER_BFF_SECRET;
   const origin = process.env.CUSTOMER_PUBLIC_ORIGIN;
-  if (process.env.CUSTOMER_ACCOUNTS_ENABLED !== 'true') throw new AccountServiceError('ACCOUNT_FEATURE_DISABLED');
+  if (process.env.CUSTOMER_ACCOUNTS_ENABLED !== 'true') throw new AccountServiceError('ACCOUNT_BFF_FEATURE_DISABLED');
   if (!backend) throw new AccountServiceError('ACCOUNT_BACKEND_URL_MISSING');
   if (!secret || Buffer.byteLength(secret) < 32) throw new AccountServiceError('ACCOUNT_BFF_SECRET_MISSING_OR_INVALID');
   if (!origin) throw new AccountServiceError('ACCOUNT_PUBLIC_ORIGIN_MISSING');
