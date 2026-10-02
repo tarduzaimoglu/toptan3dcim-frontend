@@ -13,6 +13,30 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   const [token, setToken] = useState(''); const [email, setEmail] = useState('');
   const [pass, setPass] = useState(''); const [confirmation, setConfirmation] = useState(''); const [name, setName] = useState('');
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [error, setError] = useState('');
+  const [serviceState, setServiceState] = useState<'checking'|'available'|'unavailable'>('checking');
+  const [serviceMessage, setServiceMessage] = useState('');
+  useEffect(() => {
+    let active = true;
+    fetch('/api/account/me', { cache: 'no-store' }).then(async response => {
+      if (!active) return;
+      if (response.status === 200 || response.status === 401) { setServiceState('available'); return; }
+      let body: { code?: string } = {};
+      try { body = await response.json(); } catch { /* use generic safe message */ }
+      if (!active) return;
+      const messages: Record<string, string> = {
+        ACCOUNT_BFF_FEATURE_DISABLED: 'Hesap hizmeti şu anda kullanıma açılmamış.',
+        ACCOUNT_FEATURE_DISABLED: 'Hesap hizmeti şu anda bakım nedeniyle kapalı.',
+        ACCOUNT_BACKEND_URL_MISSING: 'Hesap servisi bağlantısı yapılandırılmamış.',
+        ACCOUNT_BFF_SECRET_MISSING_OR_INVALID: 'Hesap servisi güvenli bağlantı ayarı eksik.',
+        ACCOUNT_BACKEND_UNREACHABLE: 'Hesap sunucusuna şu anda ulaşılamıyor.',
+      };
+      setServiceMessage(messages[body.code || ''] || 'Hesap hizmetine şu anda erişilemiyor. Lütfen daha sonra tekrar deneyin.');
+      setServiceState('unavailable');
+    }).catch(() => {
+      if (active) { setServiceMessage('Hesap sunucusuna şu anda ulaşılamıyor.'); setServiceState('unavailable'); }
+    });
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     if (mode === 'verify' || mode === 'reset') {
       const value = new URLSearchParams(window.location.hash.slice(1)).get('token') || '';
@@ -41,6 +65,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
   const linkMode = mode === 'verify' || mode === 'reset';
   return <div className="mx-auto max-w-lg px-4 py-12 text-slate-900">
     <h1 className="text-3xl font-bold">{titles[mode]}</h1>
+    {serviceState === 'checking' && <p role="status" className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">Hesap hizmeti kontrol ediliyor…</p>}
+    {serviceState === 'unavailable' && <section role="alert" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><p className="font-semibold">{serviceMessage}</p><p className="mt-2">Giriş, kayıt ve e-posta işlemleri şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.</p></section>}
+    {serviceState === 'available' && <>
     {mode === 'register' && <p className="mt-3 text-slate-600">Üyelik için adres bilgisi gerekmez. E-posta adresinizi doğruladıktan sonra hesabınıza giriş yapabilirsiniz.</p>}
     {mode === 'verify' && <p className="mt-3 text-slate-600">E-posta adresinizi doğrulamak için aşağıdaki düğmeye basın.</p>}
     <form onSubmit={submit} className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
@@ -56,5 +83,6 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     <nav aria-label="Üyelik işlemleri" className="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-[#7C3AED]">
       <Link href="/hesap/giris">Giriş yap</Link><Link href="/hesap/kayit">Hesap oluştur</Link><Link href="/hesap/sifremi-unuttum">Şifremi unuttum</Link><Link href="/hesap/dogrulama-gonder">Doğrulama e-postası iste</Link>
     </nav>
+    </>}
   </div>;
 }
