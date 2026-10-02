@@ -7,7 +7,6 @@ import {
   useCart,
   CART_MIN_QTY,
   CART_MAX_QTY,
-  CART_STEP,
 } from "@/components/cart/CartContext";
 import {
   vatInclusiveAmount,
@@ -149,6 +148,8 @@ export default function CartPage() {
     effectiveUnitPriceOf,
     lineTotalOf,
     cartTotal,
+    warnings,
+    hydrated,
   } = useCart();
 
   const [qtyDraft, setQtyDraft] = React.useState<Record<string, string>>({});
@@ -157,14 +158,14 @@ export default function CartPage() {
   const mapped = items.map((it) => {
     const id = it.id;
     const title = it.product?.title ?? "Ürün";
-    const qty = Number(it.qty ?? (it.product as any)?.minQty ?? CART_MIN_QTY);
+    const qty = Number(it.qty ?? it.product.minQty ?? CART_MIN_QTY);
 
     const unitBase = unitPriceOf(id);
     const disc = discountPerUnitOf(id);
     const unitEffective = effectiveUnitPriceOf(id);
     const total = lineTotalOf(id);
 
-    return { id, title, qty, unitBase, discountPerUnit: disc, unitEffective, total, minQty: (it.product as any)?.minQty };
+    return { id, title, qty, unitBase, discountPerUnit: disc, unitEffective, total, minQty: it.product.minQty };
   });
 
   const subtotal = cartTotal;
@@ -278,7 +279,8 @@ export default function CartPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-10 bg-white text-slate-900">
+    <main className="mx-auto w-full max-w-6xl px-4 py-10 bg-white text-slate-900" aria-busy={!hydrated}>
+      {warnings.length > 0 && <div role="alert" className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4">{warnings.map((w,i) => <p key={i}>{w}</p>)}</div>}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-semibold">Sepet</h1>
@@ -295,15 +297,15 @@ export default function CartPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
-          {items.length === 0 ? (
+          {!hydrated ? <p>Sepet yükleniyor…</p> : items.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-slate-700">Sepetiniz şu anda boş.</div>
           ) : (
             <>
               {items.map((it) => {
                 const id = it.id;
                 const title = it.product?.title ?? "Ürün";
-                const img = (it.product as any)?.imageUrl ?? "/products/placeholder.png";
-                const minQty = (it.product as any)?.minQty ?? CART_MIN_QTY;
+                const img = it.product.imageUrl ?? "/products/placeholder.png";
+                const minQty = it.product.minQty ?? CART_MIN_QTY;
                 
                 const unitBase = unitPriceOf(id);
                 const disc = discountPerUnitOf(id);

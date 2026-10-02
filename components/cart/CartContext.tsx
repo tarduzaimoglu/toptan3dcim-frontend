@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { accountRequest } from '@/lib/account-client';
 import type { Product } from "@/lib/products/types";
 import { discountPerUnitTRY, effectiveUnitPriceTRY } from "@/lib/pricing";
 
@@ -67,6 +68,9 @@ type CartContextValue = {
   itemCount: number;
   qtyCount: number;
   hydrated: boolean;
+  revision: number;
+  accountCart: boolean;
+  warnings: string[];
   unitPriceOf: (rowId: string) => number;
   discountPerUnitOf: (rowId: string) => number;
   effectiveUnitPriceOf: (rowId: string) => number;
@@ -104,13 +108,14 @@ function parseLegacyCompositeId(id: string): { productId: string; colorName: str
   return { productId: match[1], colorName };
 }
 
-function normalizeStoredItems(input: any): CartItem[] {
+function normalizeStoredItems(input: unknown): CartItem[] {
   if (!Array.isArray(input)) return [];
   const normalized: CartItem[] = [];
 
-  for (const it of input) {
-    if (!it || typeof it !== "object") continue;
-    const p = it.product && typeof it.product === "object" ? it.product : {};
+  for (const value of input) {
+    if (!value || typeof value !== "object") continue;
+    const it = value as Partial<StoredCartItem>;
+    const p = it.product && typeof it.product === "object" ? it.product : {} as Partial<StoredCartItem['product']>;
     const title = typeof p.title === "string" ? p.title : "";
     if (!title) continue;
 
@@ -151,7 +156,7 @@ function normalizeStoredItems(input: any): CartItem[] {
       imageUrl: p.imageUrl,
       wholesalePrice: p.wholesalePrice,
       minQty: p.minQty,
-    } as any as Product;
+    } as Product;
 
     normalized.push({ id: rowId, productId, variant, qty, product });
   }
@@ -166,36 +171,89 @@ function toStored(items: CartItem[]): StoredCartItem[] {
     qty: it.qty,
     product: {
       id: it.product?.id ?? it.productId,
-      title: (it.product as any)?.title ?? "",
-      imageUrl: (it.product as any)?.imageUrl,
-      wholesalePrice: (it.product as any)?.wholesalePrice,
-      minQty: (it.product as any)?.minQty,
+      title: it.product?.title ?? "",
+      imageUrl: it.product?.imageUrl,
+      wholesalePrice: it.product?.wholesalePrice,
+      minQty: it.product?.minQty,
     },
   }));
 }
+const inputs = (rows: CartItem[]) => rows.map(r => ({ productId: r.productId, qty: r.qty, variant: r.variant || null, price: r.product.wholesalePrice }));
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    const saved = safeJsonParse<any>(localStorage.getItem(STORAGE_KEY));
-    const maybeItems = Array.isArray(saved?.items) ? saved.items : Array.isArray(saved) ? saved : null;
-    if (maybeItems) {
-      setItems(normalizeStoredItems(maybeItems));
-    }
-    setHydrated(true);
+  const [accountCart, setAccountCart] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const state = useRef({ items, revision, accountCart, generation: 0 });
+  const queue = useRef(Promise.resolve());
+  const accept = useCallback((result: { cart: { lines: CartItem[]; revision: number; warnings: string[] } }) => {
+    const rows = result.cart.lines.map((r: CartItem & { invalid?: boolean; problem?: string }) => ({ ...r, id: r.id || `${r.productId}:${r.variant?.colorName || ''}`, product: r.product || { id: r.productId, title: r.problem || 'Geçersiz ürün' } as Product }));
+    state.current.items = rows; state.current.revision = result.cart.revision;
+    setItems(rows); setRevision(result.cart.revision); setWarnings(result.cart.warnings);
   }, []);
+  const changeItems = useCallback((update: (rows: CartItem[]) => CartItem[]) => {
+    if (!state.current.accountCart) { setItems(update); return; }
+    const generation = state.current.generation;
+    queue.current = queue.current.then(async () => {
+      if (generation !== state.current.generation) return;
+      try {
+        const result = await accountRequest('cart-save', { items: inputs(update(state.current.items)), revision: state.current.revision });
+        if (generation === state.current.generation) accept(result);
+      } catch (e) {
+        if (generation !== state.current.generation) return;
+        const message = e instanceof Error ? e.message : 'Sepet güncellenemedi.';
+        try { accept(await accountRequest('cart')); } catch {}
+        setWarnings(prev => [...prev, message]);
+      }
+    });
+  }, [accept]);
 
   useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: toStored(items) }));
-  }, [items, hydrated]);
+    async function sync() {
+      const generation = ++state.current.generation;
+      setHydrated(false); setItems([]); state.current.items = []; setWarnings([]);
+      const saved = safeJsonParse<{ items?: CartItem[]; mergeId?: string }>(localStorage.getItem(STORAGE_KEY));
+      const guest = normalizeStoredItems(Array.isArray(saved) ? saved : saved?.items || []);
+      try {
+        const response = await fetch('/api/account/me', { cache: 'no-store' });
+        if (generation !== state.current.generation) return;
+        if (response.ok) {
+          setAccountCart(true); state.current.accountCart = true;
+          let result = await accountRequest('cart');
+          if (guest.length) {
+            const mergeId = saved?.mergeId || crypto.randomUUID();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: toStored(guest), mergeId }));
+            try { result = await accountRequest('cart-merge', { items: inputs(guest), mergeId }); localStorage.removeItem(STORAGE_KEY); }
+            catch (e) { result.cart.warnings.push(e instanceof Error ? e.message : 'Misafir sepeti birleştirilemedi.'); }
+          }
+          if (generation === state.current.generation) accept(result);
+        } else if (response.status === 401 || response.status === 503 && process.env.NEXT_PUBLIC_CUSTOMER_ACCOUNTS_ENABLED !== 'true') {
+          setAccountCart(false); state.current.accountCart = false; setItems(guest);
+        } else { setWarnings(['Hesap sepetine erişilemiyor. Sayfayı yenileyin.']); }
+      } catch { setWarnings(['Sepet hizmetine erişilemiyor. Sayfayı yenileyin.']); }
+      if (generation === state.current.generation) setHydrated(true);
+    }
+    void sync();
+    const cartState = state.current;
+    const changed = () => { sessionStorage.removeItem('checkout-request'); void sync(); };
+    const focus = () => { if (state.current.accountCart) queue.current = queue.current.then(async () => { try { accept(await accountRequest('cart')); } catch {} }); };
+    window.addEventListener('customer-session-changed', changed); window.addEventListener('focus', focus);
+    return () => { cartState.generation++; window.removeEventListener('customer-session-changed', changed); window.removeEventListener('focus', focus); };
+  }, [accept]);
+
+  useEffect(() => {
+    if (!hydrated || accountCart) return;
+    const previous = safeJsonParse<{ settledOrders?: string[] }>(localStorage.getItem(STORAGE_KEY));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: toStored(items), settledOrders: previous?.settledOrders || [] }));
+  }, [items, hydrated, accountCart]);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
+      if (state.current.accountCart) return;
       if (e.key !== STORAGE_KEY) return;
-      const saved = safeJsonParse<any>(e.newValue);
+      const saved = safeJsonParse<{ items?: StoredCartItem[] }>(e.newValue);
       const maybeItems = Array.isArray(saved?.items) ? saved.items : Array.isArray(saved) ? saved : null;
       if (!maybeItems) {
         setItems([]);
@@ -252,9 +310,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }, 0);
 
     const setQty = (rowId: string, qty: number) => {
-      setItems((prev) => prev.map((x) => {
+      changeItems((prev) => prev.map((x) => {
         if (x.id === rowId) {
-          const min = (x.product as any)?.minQty ?? CART_MIN_QTY;
+          const min = x.product?.minQty ?? CART_MIN_QTY;
           return { ...x, qty: dynamicClamp(qty, min) };
         }
         return x;
@@ -262,22 +320,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
 
     const inc = (rowId: string, step = CART_STEP) => {
-      setItems((prev) => prev.map((x) => {
+      changeItems((prev) => prev.map((x) => {
         if (x.id !== rowId) return x;
-        const min = (x.product as any)?.minQty ?? CART_MIN_QTY;
+        const min = x.product?.minQty ?? CART_MIN_QTY;
         return { ...x, qty: dynamicClamp((x.qty || min) + step, min) };
       }));
     };
 
     const dec = (rowId: string, step = CART_STEP) => {
-      setItems((prev) => prev.map((x) => {
+      changeItems((prev) => prev.map((x) => {
         if (x.id !== rowId) return x;
-        const min = (x.product as any)?.minQty ?? CART_MIN_QTY;
+        const min = x.product?.minQty ?? CART_MIN_QTY;
         return { ...x, qty: dynamicClamp((x.qty || min) - step, min) };
       }));
     };
 
     const addItem = (payload: AddPayload) => {
+      if (state.current.accountCart) {
+        const generation = state.current.generation;
+        queue.current = queue.current.then(async () => {
+          if (generation !== state.current.generation) return;
+          try { const result = await accountRequest('cart-merge', { mergeId: crypto.randomUUID(), items: [{ productId: payload.id, qty: payload.qty || payload.minQty || 1, variant: payload.variant || null }] }); if (generation === state.current.generation) accept(result); }
+          catch (e) { if (generation === state.current.generation) setWarnings([e instanceof Error ? e.message : 'Ürün eklenemedi.']); }
+        }); return;
+      }
       const minQtyRule = payload.minQty ?? CART_MIN_QTY;
       const incomingQty = dynamicClamp(payload.qty ?? minQtyRule, minQtyRule);
       const incomingBasePrice = typeof payload.price === "number" ? payload.price : FALLBACK_UNIT_PRICE;
@@ -291,7 +357,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (idx >= 0) {
           const copy = [...prev];
           const existing = copy[idx];
-          const min = (existing.product as any)?.minQty ?? CART_MIN_QTY;
+          const min = existing.product?.minQty ?? CART_MIN_QTY;
           const nextQty = dynamicClamp((existing.qty || min) + incomingQty, min);
 
           copy[idx] = {
@@ -308,21 +374,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           imageUrl: payload.image,
           wholesalePrice: incomingBasePrice,
           minQty: payload.minQty,
-        } as any as Product;
+        } as Product;
 
         return [...prev, { id: rowId, productId: payload.id, variant, product, qty: incomingQty }];
       });
     };
 
-    const remove = (rowId: string) => setItems((prev) => prev.filter((x) => x.id !== rowId));
-    const clear = () => setItems([]);
+    const remove = (rowId: string) => changeItems((prev) => prev.filter((x) => x.id !== rowId));
+    const clear = () => changeItems(() => []);
 
     return {
-      items, itemCount, qtyCount, hydrated,
+      items, itemCount, qtyCount, hydrated, revision, accountCart, warnings,
       unitPriceOf, discountPerUnitOf, effectiveUnitPriceOf, lineTotalOf, cartTotal,
       addItem, setQty, inc, dec, remove, clear,
     };
-  }, [items, hydrated]);
+  }, [items, hydrated, revision, accountCart, warnings, changeItems, accept]);
 
   return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>;
 }

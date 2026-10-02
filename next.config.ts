@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/backend/:path*",
-        destination: "https://kesiolabs-slave1.tail4be241.ts.net/:path*",
+        destination: `${process.env.BACKEND_PROXY_URL || "https://kesiolabs-slave1.tail4be241.ts.net"}/:path*`,
       },
     ];
   },

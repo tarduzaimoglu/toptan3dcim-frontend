@@ -1,0 +1,5 @@
+'use client';
+import { useEffect,useState } from 'react';
+import Link from 'next/link';
+import { accountRequest } from '@/lib/account-client';
+export default function ClaimOrderPage(){const [state,setState]=useState('loading');useEffect(()=>{const token=new URLSearchParams(location.hash.slice(1)).get('token')||'';history.replaceState(null,'',location.pathname);void accountRequest('claim-order-verify',{token}).then(()=>setState('done')).catch(()=>setState('invalid'));},[]);return <main className="mx-auto max-w-xl px-4 py-16"><section className="rounded-2xl border bg-white p-6"><h1 className="text-2xl font-bold">Sipariş doğrulaması</h1><p className="mt-3">{state==='loading'?'Sipariş bağlantısı doğrulanıyor…':state==='done'?'Sipariş hesabınıza bağlandı.':state==='invalid'?'Bağlantı geçersiz, kullanılmış veya süresi dolmuş. Yeni bir istek oluşturabilirsiniz.':'Doğrulama tamamlanamadı.'}</p><Link className="mt-5 inline-block text-violet-700 underline" href="/hesap/tercihler">Hesabıma dön</Link></section></main>;}

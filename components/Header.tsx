@@ -5,11 +5,13 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation"; 
 import { useCart } from "@/components/cart/CartContext";
 import { SHOW_PRICES } from "@/lib/config";
+import AccountAccess from "@/components/account/AccountAccess";
 
 const navItems = [
   { label: "Anasayfa", href: "/" },
   { label: "Ürün Kataloğu", href: "/products" },
   { label: "Teklif Al", href: "/teklif-al" },
+  { label: "Kişiye Özel Figür", href: "/kisiye-ozel-figur" },
   { label: "Firmanıza Özel Ürünler", href: "/custom-products" },
   { label: "İletişim", href: "/contact" },
 ];
@@ -145,6 +147,7 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <AccountAccess />
             <Link
               href="/cart"
               onClick={(e) => handleNavClick(e, "/cart")}
