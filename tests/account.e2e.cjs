@@ -25,7 +25,7 @@ async function main() {
       }
       await new Promise(r => setTimeout(r, 1000));
     }
-    browser = await chromium.launch({ channel: 'msedge', headless: true });
+    browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'tr-TR' });
     await context.route('**/*', route => {
       const url = new URL(route.request().url());
@@ -88,6 +88,11 @@ async function main() {
     assert.match(cookieHeader, /HttpOnly/i); assert.match(cookieHeader, /SameSite=Lax/i);
     const payload = await loggedIn.json(); assert.ok(!payload.sessionToken); assert.ok(!payload.jwt); assert.ok(!payload.refreshToken);
     await page.waitForURL(origin + '/hesap'); await page.getByRole('heading', { name: /Merhaba/ }).waitFor(); await noOverflow();
+    await page.goto(origin + '/kisiye-ozel-figur');
+    await page.locator('figcaption').filter({ hasText: 'reference.png' }).waitFor();
+    assert.equal(await page.locator('input[type=file]').count() > 0, true);
+    await noOverflow();
+    console.log('PASS UI: mobile photo selection survives reload, registration, verification and login via IndexedDB draft');
     console.log('PASS UI: mobile registration/error, verification, login, HttpOnly response, restricted redirect');
 
     await page.goto(origin + '/hesap/adresler'); await page.getByText('Henüz kayıtlı adresiniz yok.', { exact: false }).waitFor();
@@ -201,4 +206,3 @@ async function main() {
   }
 }
 main().catch(e => { console.error(e.message); process.exitCode = 1; });
-
