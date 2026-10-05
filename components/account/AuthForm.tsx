@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { accountRequest } from '@/lib/account-client';
 import { safeReturn } from '@/lib/account-redirect';
+import { Notice, fieldClass, primaryButtonClass } from '@/components/account/ui';
 
 type Mode = 'login' | 'register' | 'forgot' | 'resend' | 'verify' | 'reset';
 const titles: Record<Mode, string> = { login: 'Hesabınıza giriş yapın', register: 'Hesap oluşturun', forgot: 'Şifremi unuttum', resend: 'Yeni doğrulama e-postası', verify: 'E-posta doğrulama', reset: 'Yeni şifre belirleyin' };
-const inputClass = 'mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-base outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-purple-100';
+const inputClass = fieldClass;
 export default function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const [token, setToken] = useState(''); const [email, setEmail] = useState('');
@@ -63,26 +64,27 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     finally { setBusy(false); }
   }
   const linkMode = mode === 'verify' || mode === 'reset';
-  return <div className="mx-auto max-w-lg px-4 py-12 text-slate-900">
-    <h1 className="text-3xl font-bold">{titles[mode]}</h1>
-    {serviceState === 'checking' && <p role="status" className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">Hesap hizmeti kontrol ediliyor…</p>}
-    {serviceState === 'unavailable' && <section role="alert" className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><p className="font-semibold">{serviceMessage}</p><p className="mt-2">Giriş, kayıt ve e-posta işlemleri şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.</p></section>}
+  return <main className="account-workspace px-4 py-10 sm:py-16"><div className="mx-auto grid max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_48px_rgba(15,23,42,.07)] md:grid-cols-[minmax(0,1fr)_23rem]">
+    <section className="p-6 sm:p-9"><p className="account-eyebrow">Güvenli müşteri hesabı</p><h1 className="text-3xl font-extrabold tracking-tight text-slate-950">{titles[mode]}</h1>
+    {serviceState === 'checking' && <div className="mt-5"><Notice>Hesap hizmeti kontrol ediliyor…</Notice></div>}
+    {serviceState === 'unavailable' && <div className="mt-5"><Notice kind="warning" role="alert"><p className="font-semibold">{serviceMessage}</p><p className="mt-2">Giriş, kayıt ve e-posta işlemleri şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.</p></Notice></div>}
     {serviceState === 'available' && <>
     {mode === 'register' && <p className="mt-3 text-slate-600">Üyelik için adres bilgisi gerekmez. E-posta adresinizi doğruladıktan sonra hesabınıza giriş yapabilirsiniz.</p>}
     {mode === 'verify' && <p className="mt-3 text-slate-600">E-posta adresinizi doğrulamak için aşağıdaki düğmeye basın.</p>}
-    <form onSubmit={submit} className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
+    <form onSubmit={submit} className="mt-7 space-y-5">
       {mode === 'register' && <label className="block font-medium">Ad soyad<input className={inputClass} autoComplete="name" required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label>}
       {!linkMode && <label className="block font-medium">E-posta<input className={inputClass} type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>}
       {['register', 'login', 'reset'].includes(mode) && <label className="block font-medium">{mode === 'reset' ? 'Yeni şifre' : 'Şifre'}<input className={inputClass} type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'login' ? undefined : 12} maxLength={72} value={pass} onChange={e => setPass(e.target.value)} /></label>}
       {['register', 'reset'].includes(mode) && <><p className="text-sm text-slate-600">En az 12 karakter kullanın. Şifre en fazla 72 bayt olabilir.</p><label className="block font-medium">Şifre tekrar<input className={inputClass} type="password" autoComplete="new-password" required minLength={12} maxLength={72} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label></>}
       {linkMode && !token && !message && <p role="alert" className="text-sm text-amber-800">Geçerli bir bağlantı bulunamadı. E-postanızdaki bağlantıyı açın veya yeni bağlantı isteyin.</p>}
-      {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-red-800">{error}</p>}
-      {message && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-emerald-800">{message}</p>}
-      <button disabled={busy || linkMode && !token} className="min-h-12 w-full rounded-xl bg-[#7C3AED] px-4 py-3 font-semibold text-white disabled:opacity-50">{busy ? 'İşlem yapılıyor…' : mode === 'login' ? 'Giriş yap' : mode === 'register' ? 'Hesap oluştur' : mode === 'verify' ? 'E-postayı doğrula' : mode === 'reset' ? 'Şifreyi güncelle' : 'E-posta gönder'}</button>
+      {error && <Notice kind="error">{error}</Notice>}
+      {message && <Notice kind="success">{message}</Notice>}
+      <button disabled={busy || linkMode && !token} className={`${primaryButtonClass} w-full`}>{busy ? 'İşlem yapılıyor…' : mode === 'login' ? 'Giriş yap' : mode === 'register' ? 'Hesap oluştur' : mode === 'verify' ? 'E-postayı doğrula' : mode === 'reset' ? 'Şifreyi güncelle' : 'E-posta gönder'}</button>
     </form>
     <nav aria-label="Üyelik işlemleri" className="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-[#7C3AED]">
       <Link href="/hesap/giris">Giriş yap</Link><Link href="/hesap/kayit">Hesap oluştur</Link><Link href="/hesap/sifremi-unuttum">Şifremi unuttum</Link><Link href="/hesap/dogrulama-gonder">Doğrulama e-postası iste</Link>
     </nav>
     </>}
-  </div>;
+    </section><aside className="border-t border-slate-200 bg-slate-50 p-6 sm:p-8 md:border-l md:border-t-0"><h2 className="text-lg font-bold text-slate-900">Hesabınızla neler yapabilirsiniz?</h2><ul className="mt-5 space-y-4 text-sm leading-6 text-slate-600"><li><strong className="block text-slate-800">Siparişlerinizi izleyin</strong>Ödeme ve operasyon durumlarını ayrı görüntüleyin.</li><li><strong className="block text-slate-800">Figür taleplerinizi yönetin</strong>Fotoğrafları, teklifleri ve sonraki adımı tek yerde görün.</li><li><strong className="block text-slate-800">Bilgilerinizi güncelleyin</strong>Profil, adres ve iletişim tercihlerinizi yönetin.</li></ul><p className="mt-8 border-t border-slate-200 pt-5 text-xs leading-5 text-slate-500">Şifrenizi veya doğrulama bağlantınızı e-posta dışında paylaşmayın.</p></aside>
+  </div></main>;
 }

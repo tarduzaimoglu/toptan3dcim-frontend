@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { accountRequest } from '@/lib/account-client';
 import { money, date } from '@/lib/order-display';
+import { DetailRow, Notice, StatusBadge, fieldClass, primaryButtonClass, secondaryButtonClass } from '@/components/account/ui';
 
 type Offer = {
   id: string; version: number; state: string; scope: { characters: number; pets: number; colorChoice: string; designDescription: string; includedParts: string[]; sizeDescription?: string; standIncluded?: boolean | null; boxIncluded?: boolean | null; productionDeliveryNote?: string };
@@ -65,25 +66,21 @@ export default function OfferActions({ requestId, offers, existingOrder, payment
     await run(async () => sendToBank(await accountRequest('figurine-start-payment', { orderId: order.id })));
   }
 
-  return <section className="space-y-4 rounded-2xl border border-violet-200 bg-violet-50 p-5 sm:p-6">
-    <h3 className="text-xl font-bold">Teklif ve sipariş</h3>
-    {offers.length === 0 && <p className="text-sm text-slate-700">Talebiniz inceleniyor. Henüz teklif oluşturulmadı.</p>}
-    {offers.map(offer => <article key={offer.id} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold">Teklif · Sürüm {offer.version}</h4><span className="text-sm text-slate-600">{({ offered: 'Yanıt bekliyor', accepted: offer.approvalInvalidatedAt ? 'Önceki onay geçersiz' : 'Teklif onaylandı', superseded: 'Yeni sürümle geçersiz', withdrawn: 'Geri çekildi', expired: 'Süresi doldu', 'changes-requested': 'Değişiklik istendi' } as Record<string,string>)[offer.state] || offer.state}</span></div>
-      <p className="text-sm">{offer.scope.characters} karakter · {offer.scope.pets} pet · {offer.scope.colorChoice === 'color' ? 'Renkli' : offer.scope.colorChoice === 'monochrome' ? 'Beyaz / tek renk' : 'Özel'}</p>
-      <p className="whitespace-pre-wrap text-sm">{offer.scope.designDescription}</p>
-      <ul className="list-disc pl-5 text-sm">{offer.scope.includedParts.map((part, i) => <li key={`${offer.id}-${i}`}>{part}</li>)}</ul>
+  return <section className="account-surface overflow-hidden">
+    <div className="account-section"><p className="account-eyebrow">Fiyatlandırma</p><h3 className="text-xl font-extrabold">Teklif</h3><p className="mt-1 text-sm text-slate-600">Kapsamı ve fiyat dökümünü inceleyerek yanıtınızı iletin.</p></div>
+    {offers.length === 0 && <div className="account-section"><Notice>Talebiniz inceleniyor. Henüz teklif oluşturulmadı.</Notice></div>}
+    {offers.map(offer => <article key={offer.id} className="account-section space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-lg font-extrabold">Teklif · Sürüm {offer.version}</h4><StatusBadge tone={offer.state === 'accepted' ? 'green' : offer.state === 'offered' ? 'purple' : 'neutral'}>{({ offered: 'Yanıtınız bekleniyor', accepted: offer.approvalInvalidatedAt ? 'Önceki onay geçersiz' : 'Onaylandı', superseded: 'Yeni sürümle geçersiz', withdrawn: 'Geri çekildi', expired: 'Süresi doldu', 'changes-requested': 'Değişiklik istendi' } as Record<string,string>)[offer.state] || 'Güncellendi'}</StatusBadge></div>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]"><div><p className="text-sm font-semibold text-slate-500">{offer.scope.characters} kişi · {offer.scope.pets} pet · {offer.scope.colorChoice === 'color' ? 'Renkli' : offer.scope.colorChoice === 'monochrome' ? 'Beyaz / tek renk' : 'Özel'}</p><h5 className="mt-4 font-bold">Kapsam</h5><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{offer.scope.designDescription}</p><h5 className="mt-4 font-bold">Dahil olanlar</h5><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">{offer.scope.includedParts.map((part, i) => <li key={`${offer.id}-${i}`}>{part}</li>)}</ul>
       {offer.scope.sizeDescription && <p className="text-sm">Boyut: {offer.scope.sizeDescription}</p>}
       {offer.scope.standIncluded !== null && offer.scope.standIncluded !== undefined && <p className="text-sm">Kaide: {offer.scope.standIncluded ? 'Dahil' : 'Dahil değil'}</p>}
       {offer.scope.boxIncluded !== null && offer.scope.boxIncluded !== undefined && <p className="text-sm">Kutu: {offer.scope.boxIncluded ? 'Dahil' : 'Dahil değil'}</p>}
       {offer.scope.productionDeliveryNote && <p className="whitespace-pre-wrap text-sm">Üretim / teslimat: {offer.scope.productionDeliveryNote}</p>}
-      {offer.customerNote && <p className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm">{offer.customerNote}</p>}
-      <dl className="space-y-1 border-t pt-3 text-sm"><div className="flex justify-between"><dt>Teklif</dt><dd>{money(offer.amountMinor, offer.currency)}</dd></div><div className="flex justify-between"><dt>Vergi</dt><dd>{money(offer.taxMinor, offer.currency)}</dd></div><div className="flex justify-between"><dt>Kargo</dt><dd>{money(offer.shippingMinor, offer.currency)}</dd></div><div className="flex justify-between font-bold"><dt>Ödenecek toplam</dt><dd>{money(offer.totalMinor, offer.currency)}</dd></div></dl>
-      <p className="text-xs text-slate-600">{offer.taxShippingDisclosure}{offer.validUntil ? ` · Son geçerlilik: ${date(offer.validUntil)}` : ''}</p>
-      {offer.state === 'offered' && <div className="space-y-3 border-t pt-3">
-        <button type="button" disabled={busy} onClick={() => void acceptOffer(offer)} className="min-h-11 w-full rounded-xl bg-violet-700 px-4 py-3 font-bold text-white disabled:opacity-50">Teklif sürüm {offer.version} için onay ver</button>
-        <label className="block text-sm font-medium">Değişiklik isteği<textarea value={comment} onChange={e => setComment(e.target.value)} maxLength={2000} rows={3} className="mt-1 w-full rounded-xl border p-3" placeholder="İstediğiniz değişikliği açıklayın" /></label>
-        <button type="button" disabled={busy || !comment.trim()} onClick={() => void requestChange(offer)} className="min-h-11 rounded-xl border border-violet-300 px-4 py-2 font-semibold text-violet-800 disabled:opacity-50">Değişiklik iste</button>
+      {offer.customerNote && <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm"><p className="font-semibold">Size iletilen not</p><p className="mt-1 whitespace-pre-wrap text-slate-700">{offer.customerNote}</p></div>}</div>
+      <aside className="h-fit rounded-xl border border-slate-200 bg-slate-50 p-4"><h5 className="font-bold">Fiyat özeti</h5><dl className="mt-2 text-sm"><DetailRow label="Teklif" value={money(offer.amountMinor, offer.currency)} /><DetailRow label="Vergi" value={money(offer.taxMinor, offer.currency)} /><DetailRow label="Kargo" value={money(offer.shippingMinor, offer.currency)} /><DetailRow strong label="Toplam" value={money(offer.totalMinor, offer.currency)} /></dl><p className="mt-3 text-xs leading-5 text-slate-600">{offer.taxShippingDisclosure}</p>{offer.validUntil && <p className="mt-2 text-xs font-semibold text-slate-700">Son geçerlilik: {date(offer.validUntil)}</p>}</aside></div>
+      {offer.state === 'offered' && <div className="grid gap-4 border-t border-slate-200 pt-5 lg:grid-cols-2">
+        <div><h5 className="font-bold">Teklifi onayla</h5><p className="mt-1 text-sm leading-6 text-slate-600">Onayınız kaydedilir; ödeme alınmış veya üretim başlamış sayılmaz.</p><button type="button" disabled={busy} onClick={() => void acceptOffer(offer)} className={`${primaryButtonClass} mt-3 w-full`}>Teklif sürüm {offer.version} için onay ver</button></div>
+        <div><label className="block text-sm font-bold">Değişiklik isteği<textarea value={comment} onChange={e => setComment(e.target.value)} maxLength={2000} rows={3} className={fieldClass} placeholder="İstediğiniz değişikliği açıklayın" /></label><button type="button" disabled={busy || !comment.trim()} onClick={() => void requestChange(offer)} className={`${secondaryButtonClass} mt-3 w-full`}>Değişiklik iste</button></div>
       </div>}
     </article>)}
     {accepted && !order && !paymentsEnabled && <div className="space-y-3 rounded-xl bg-white p-4"><p className="font-semibold">Teklif onayınız kaydedildi. Bu, ödeme alındığı veya üretimin başladığı anlamına gelmez.</p><p className="text-sm text-slate-600">Kartlı ödeme şu anda kapalı. Sonraki adımları ekibimizle görüşün.</p><div className="flex flex-wrap gap-3"><a className="min-h-11 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white" target="_blank" rel="noreferrer" href={`https://wa.me/905465868005?text=${encodeURIComponent(`Kişiye özel figür teklifimi onayladım. Talep: ${requestId}`)}`}>WhatsApp ile iletişim</a><a className="min-h-11 rounded-xl border px-4 py-3 font-semibold" href={`mailto:info@kesiolabs.com?subject=${encodeURIComponent('Kişiye özel figür teklifi')}`}>E-posta gönder</a></div></div>}
@@ -101,6 +98,6 @@ export default function OfferActions({ requestId, offers, existingOrder, payment
       {!order.paymentAvailable && order.paymentState !== 'paid' && <p className="text-sm text-amber-800">Bu ortamda çevrimiçi ödeme etkin değil. Gerçek tahsilat başlatılmadı.</p>}
       <Link className="inline-block min-h-11 py-3 text-violet-700 underline" href={`/hesap/siparisler/${order.id}`}>Sipariş detayını aç</Link>
     </div>}
-    {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}{message && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
+    {error && <div className="account-section"><Notice kind="error">{error}</Notice></div>}{message && <div className="account-section"><Notice kind="success">{message}</Notice></div>}
   </section>;
 }
