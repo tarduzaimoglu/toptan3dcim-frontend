@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
+import CatalogLink from "./CatalogLink";
+import { productPath } from "@/lib/products/navigation";
 import type { Product } from "@/lib/products/types";
-import { CART_MIN_QTY, FALLBACK_UNIT_PRICE } from "@/components/cart/CartContext";
+import { CART_MIN_QTY } from "@/components/cart/CartContext";
 import { SHOW_PRICES, PRICE_HIDDEN_TEXT } from "@/lib/config";
 
 // --- RENK EŞLEŞTİRME YARDIMCILARI ---
@@ -49,19 +51,19 @@ function resolveThumbSrc(product: any) {
     (typeof product?.imageUrl === "string" && product.imageUrl.trim() && product.imageUrl) ||
     (typeof product?.image === "string" && product.image.trim() && product.image);
 
-  return raw || "/products/placeholder.png";
+  return raw || "";
 }
 
 type Props = {
   product: Product;
-  onOpen: () => void;
+  onOpen?: () => void;
   isOpen?: boolean;
   qtyText?: string;
   setQtyText?: (v: string) => void;
   selectedColors?: string[]; 
 };
 
-export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Props) {
+export function ProductCard({ product, isOpen, selectedColors = [] }: Props) {
   
   const displayImageSrc = useMemo(() => {
     const prodAny = product as any;
@@ -81,13 +83,14 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
     return resolveThumbSrc(prodAny);
   }, [product, selectedColors]);
 
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const unitPrice = useMemo(() => {
     const p = (product as any).wholesalePrice;
-    return typeof p === "number" ? p : FALLBACK_UNIT_PRICE;
+    return p != null && Number.isFinite(Number(p)) ? Number(p) : undefined;
   }, [product]);
 
   const priceText = useMemo(() => {
-    return product.wholesalePriceText ?? `${unitPrice} TL/adet`;
+    return product.wholesalePriceText ?? (unitPrice !== undefined ? `${unitPrice} TL/adet` : PRICE_HIDDEN_TEXT);
   }, [product.wholesalePriceText, unitPrice]);
 
   // 🛠️ DÜZELTME: Artık eski minQtyText yerine doğrudan Strapi'den gelen sayısal minQty değerini okuyoruz
@@ -102,9 +105,8 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
   }, [product]);
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <CatalogLink
+      href={productPath(product)}
       className={[
         "group w-full text-left flex flex-col",
         "overflow-hidden rounded-2xl border bg-white shadow-sm",
@@ -113,13 +115,14 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
       ].join(" ")}
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-white border-b border-slate-100">
-        <Image
+        {displayImageSrc && failedSrc !== displayImageSrc ? <Image
           src={displayImageSrc}
+          onError={() => setFailedSrc(displayImageSrc)}
           alt={product.title}
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
           className="object-contain transition-opacity duration-300" 
-        />
+        /> : <span className="absolute inset-0 flex items-center justify-center text-sm text-slate-400">Görsel mevcut değil</span>}
 
         {tag ? (
           <div className="absolute left-3 top-3 z-10">
@@ -160,6 +163,6 @@ export function ProductCard({ product, onOpen, isOpen, selectedColors = [] }: Pr
           </div>
         </div>
       </div>
-    </button>
+    </CatalogLink>
   );
 }

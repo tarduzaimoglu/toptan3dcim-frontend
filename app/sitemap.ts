@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getBlogPosts } from '@/lib/strapi';
+import { getBlogPosts, getProductSitemapEntries } from '@/lib/strapi';
 
 type SitemapPost = {
   slug: string;
@@ -30,5 +30,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.8,
   }));
 
-  return [...routes, ...blogUrls];
+  const products = await getProductSitemapEntries();
+  return [...routes, ...blogUrls, ...products.map(p => ({
+    url: `https://toptan3dcim.com/urunler/${encodeURIComponent(p.slug)}`,
+    lastModified: new Date(p.updatedAt),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))];
 }

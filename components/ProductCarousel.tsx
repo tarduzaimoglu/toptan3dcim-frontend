@@ -57,7 +57,7 @@ export default function ProductCarousel({ products }: { products: any[] }) {
           return (
             <SwiperSlide key={item.id} className="!overflow-visible py-10">
               {/* EKLENDİ: Ürüne tıklayınca /products sayfasına open parametresiyle gider */}
-              <Link href={`/products?open=${item.id}`} className="block h-full">
+              <Link href={attr.slug ? `/urunler/${encodeURIComponent(attr.slug)}` : `/products?open=${item.id}`} className="block h-full">
                 <div className="relative group bg-white rounded-3xl border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-500 h-full flex flex-col overflow-hidden">
                   
                   {/* MODERN KART TASARIMI */}

@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import React from "react";
 import type { Product } from "@/lib/products/types";
 import { ProductCard } from "@/components/products/ProductCard";
-import { ProductExpandPanel } from "@/components/products/ProductExpandPanel";
 import { ProductCardSkeleton } from "@/components/products/ProductCardSkeleton";
 import { CART_MIN_QTY } from "@/components/cart/CartContext";
 
@@ -24,30 +22,6 @@ export function ProductGrid({
   onQtyTextChange,
   selectedColors = [], // Varsayılan değer atadık
 }: Props) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const openRef = useRef<HTMLDivElement | null>(null);
-  const searchParams = useSearchParams();
-
-  // Ana sayfadan gelen 'open' parametresini kontrol et
-  useEffect(() => {
-    const openParam = searchParams.get("open");
-    if (openParam) {
-      setOpenId(openParam);
-    }
-  }, [searchParams]);
-
-  const openIndex = useMemo(() => {
-    if (!openId) return -1;
-    return products?.findIndex((p) => String(p.id) === String(openId)) ?? -1;
-  }, [openId, products]);
-
-  useEffect(() => {
-    if (openId && openRef.current) {
-      openRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [openId, openIndex]);
-
-  // Ürünler yükleniyorsa veya liste boşsa Skeleton (İskelet) göster
   if (!products || products.length === 0) {
     return (
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
@@ -62,21 +36,8 @@ export function ProductGrid({
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
       {products.map((p) => {
         const pid = String(p.id);
-        const isOpen = pid === String(openId);
         const qtyText =
           qtyTextById[pid] ?? getQtyText(pid) ?? String(CART_MIN_QTY);
-
-        if (isOpen) {
-          return (
-            <div
-              key={pid}
-              ref={openRef}
-              className="col-span-2 sm:col-span-3 lg:col-span-4 scroll-mt-28"
-            >
-              <ProductExpandPanel product={p} onClose={() => setOpenId(null)} />
-            </div>
-          );
-        }
 
         return (
           <ProductCard
@@ -84,7 +45,6 @@ export function ProductGrid({
             product={p}
             isOpen={false}
             selectedColors={selectedColors} // YENİ: Renk bilgisini karta aktardık
-            onOpen={() => setOpenId((prev) => (prev === pid ? null : pid))}
             qtyText={qtyText}
             setQtyText={(v: string) => onQtyTextChange(pid, v)}
           />

@@ -17,11 +17,15 @@ export type ProductVariant = {
   ColorCode: string;
   VariantImage?: {
     url: string;
+    displayUrl?: string;
     thumbUrl?: string; // Kart/liste görünümleri için küçük varyant (bant genişliği optimizasyonu)
   };
 };
 
 export type Product = {
+  slug?: string;
+  categoryTitle?: string;
+  description?: string[];
   id: string;
   title: string;
   subtitle: string;
@@ -35,6 +39,7 @@ export type Product = {
   featured?: boolean;
   createdAtISO: string;
   imageUrl?: string;
+  galleryImages?: { original: string; display: string; thumb: string }[];
   imageUrls?: string[]; // Expand panel için gerekli
   imageThumbUrl?: string; // Kart/liste görünümleri için küçük varyant (bant genişliği optimizasyonu)
   variants?: ProductVariant[]; // YENİ: Renk seçeneklerimiz buraya gelecek

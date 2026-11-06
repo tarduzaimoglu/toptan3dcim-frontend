@@ -8,7 +8,7 @@ import { CART_MIN_QTY } from "@/components/cart/CartContext";
 import ProductFilter from "@/components/products/ProductFilter";
 
 // ProductExpandPanel yolunu kendi projene göre ayarla:
-import { ProductExpandPanel } from "@/components/products/ProductExpandPanel"; 
+import { catalogReturn } from "@/lib/products/navigation";
 
 type Product = any;
 type Category = { key: string; label: string };
@@ -32,7 +32,7 @@ export function getClosestStandardColor(hex: string) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return STANDARD_COLORS[0];
   const r = parseInt(result[1], 16), g = parseInt(result[2], 16), b = parseInt(result[3], 16);
-  
+
   let minDistance = Infinity;
   let closest = STANDARD_COLORS[0];
 
@@ -58,8 +58,8 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const initialCats = useMemo(() => sp?.get("cats") ? sp!.get("cats")!.split(",") : [], [sp]);
   const initialColors = useMemo(() => sp?.get("colors") ? sp!.get("colors")!.split(",") : [], [sp]);
   const initialSort = sp?.get("sort") || "newest";
-  const initialPage = Number(sp?.get("page") ?? "1");
-  const openId = sp?.get("open");
+  const initialPage = Math.max(1, Math.floor(Number(sp?.get("page")) || 1));
+
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCats);
@@ -67,25 +67,26 @@ export default function ProductsClient({ products, categories }: { products: Pro
   const [sortOption, setSortOption] = useState(initialSort);
   const [page, setPage] = useState<number>(initialPage);
   const [qtyById, setQtyById] = useState<Record<string, string>>({});
-  
-  const [selectedProductFromUrl, setSelectedProductFromUrl] = useState<Product | null>(null);
+
+
 
   useEffect(() => {
     setSelectedCategories(sp?.get("cats") ? sp!.get("cats")!.split(",") : []);
     setSelectedColors(sp?.get("colors") ? sp!.get("colors")!.split(",") : []);
     setSortOption(sp?.get("sort") || "newest");
-    setPage(Number(sp?.get("page") ?? "1"));
+    setPage(Math.max(1, Math.floor(Number(sp?.get("page")) || 1)));
     setSearchQuery(sp?.get("q") || "");
   }, [sp]);
 
   useEffect(() => {
-    if (openId && products) {
-      const found = products.find((p: any) => String(p.id) === String(openId));
-      if (found) setSelectedProductFromUrl(found);
-    } else {
-      setSelectedProductFromUrl(null);
-    }
-  }, [openId, products]);
+    const key = `catalog-scroll:${catalogReturn(`/products?${sp}`)}`;
+    let frame = 0;
+    try {
+      const y = Number(sessionStorage.getItem(key));
+      if (y > 0) frame = requestAnimationFrame(() => window.scrollTo(0, y));
+    } catch {}
+    return () => cancelAnimationFrame(frame);
+  }, [sp]);
 
   const updateUrl = useCallback((updates: Record<string, string | null>) => {
     const next = new URLSearchParams(window.location.search);
@@ -94,7 +95,7 @@ export default function ProductsClient({ products, categories }: { products: Pro
       else next.set(key, value);
     });
     const newUrl = next.toString() ? `${pathname}?${next.toString()}` : pathname;
-    router.replace(newUrl, { scroll: false });
+    router.push(newUrl, { scroll: false });
   }, [pathname, router]);
 
   const availableColors = useMemo(() => {
@@ -114,8 +115,8 @@ export default function ProductsClient({ products, categories }: { products: Pro
     let result = products || [];
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(p => 
-        String(p.title || "").toLowerCase().includes(q) || 
+      result = result.filter(p =>
+        String(p.title || "").toLowerCase().includes(q) ||
         String(p.description || "").toLowerCase().includes(q)
       );
     }
@@ -125,8 +126,8 @@ export default function ProductsClient({ products, categories }: { products: Pro
     if (selectedColors.length > 0) {
       result = result.filter((p) => {
         const hasNoColors = !p.variants || !Array.isArray(p.variants) || p.variants.length === 0;
-        if (hasNoColors) return true; 
-        
+        if (hasNoColors) return true;
+
         return p.variants.some((v: any) => {
           if (!v.ColorCode) return false;
           return selectedColors.includes(getClosestStandardColor(v.ColorCode).id);
@@ -152,7 +153,8 @@ export default function ProductsClient({ products, categories }: { products: Pro
   }, [searchQuery, selectedCategories, selectedColors, sortOption, products]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAll.length / PAGE_SIZE));
-  const paged = filteredAll.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const currentPage = Math.min(page, pageCount);
+  const paged = filteredAll.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function changePage(nextPage: number) {
     setPage(nextPage);
@@ -207,15 +209,15 @@ export default function ProductsClient({ products, categories }: { products: Pro
   return (
     <div className="container mx-auto px-4 mt-4 max-w-[1400px]">
       <div className="flex flex-col lg:flex-row relative gap-4 lg:gap-8">
-        
-        <ProductFilter 
-          categories={categories} 
+
+        <ProductFilter
+          categories={categories}
           availableColors={availableColors}
           selectedCategories={selectedCategories}
           selectedColors={selectedColors}
           searchQuery={searchQuery}
           sortOption={sortOption}
-          allProducts={products} 
+          allProducts={products}
           onCategoryToggle={handleCategoryToggle}
           onColorToggle={handleColorToggle}
           onSearchChange={handleSearchChange}
@@ -223,9 +225,9 @@ export default function ProductsClient({ products, categories }: { products: Pro
           onSortChange={handleSortChange}
           onClearAll={clearAllFilters}
         />
-        
+
         <div className="w-full lg:w-3/4 lg:flex-1 flex flex-col min-h-[50vh] relative pt-2 lg:pt-0">
-          
+
           <div className="lg:hidden mb-4 text-sm text-gray-500 font-medium px-1">
             {filteredAll.length} ürün listeleniyor
           </div>
@@ -248,23 +250,15 @@ export default function ProductsClient({ products, categories }: { products: Pro
           )}
 
           <div className="mt-12 mb-28 lg:mb-8 flex justify-center">
-            <CatalogPagination page={page} pageCount={pageCount} onChange={changePage} />
+            <CatalogPagination page={currentPage} pageCount={pageCount} onChange={changePage} />
           </div>
         </div>
       </div>
-      
-      {/* ✅ <CartFab /> buradan tamamen kaldırıldı. 
-        Artık ekranda yüzen sepet butonu çıkmayacak. 
+
+      {/* ✅ <CartFab /> buradan tamamen kaldırıldı.
+        Artık ekranda yüzen sepet butonu çıkmayacak.
       */}
 
-      {selectedProductFromUrl && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <ProductExpandPanel 
-            product={selectedProductFromUrl} 
-            onClose={() => updateUrl({ open: null })} 
-          />
-        </div>
-      )}
     </div>
   );
 }

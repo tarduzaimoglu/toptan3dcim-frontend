@@ -16,7 +16,7 @@ function unwrapEntity(entity: any) {
 
 function unwrapCollection(res: any) {
   const arr = Array.isArray(res?.data) ? res.data : [];
-  return arr.map(unwrapEntity).filter(Boolean);
+  return arr.map(unwrapEntity).filter(Boolean) as AnyObj[];
 }
 
 function unwrapRelation(rel: any) {
@@ -53,7 +53,7 @@ export async function strapiFetch<T>(path: string, init?: RequestInit & { revali
     headers,
     ...(revalidateVal === 0 
       ? { cache: "no-store" } 
-      : { next: { revalidate: revalidateVal } }
+      : { next: { ...next, revalidate: revalidateVal } }
     ),
   });
 
@@ -134,7 +134,7 @@ export async function getPostBySlug(slug: string) {
 export async function getCategories(): Promise<StrapiCategory[]> {
   const q = buildQuery({ sort: ["title:asc"], pagination: { pageSize: 200 } });
   const res = await strapiFetch<any>(`/api/categories${q}`, { revalidate: CACHE_REVALIDATE });
-  return unwrapCollection(res);
+  return unwrapCollection(res) as StrapiCategory[];
 }
 
 export type StrapiCategory = { id: number; title: string; slug: string; description?: string; };
@@ -196,18 +196,9 @@ export async function getCatalogCategories(): Promise<{ key: string; label: stri
   })).filter((x: any) => Boolean(x.key && x.label));
 }
 
-export async function getCatalogProducts(): Promise<any[]> {
-  try {
-    const path = "/api/products?sort=order:asc&pagination[pageSize]=200&filters[isActive][$eq]=true" +
-                 "&populate[0]=image" +
-                 "&populate[1]=category_product" +
-                 "&populate[2]=variants.VariantImage";
-                 
-    // ✅ GÜNCELLEME: Işık hızında geçişler için FAST_REVALIDATE (10s) yapıldı
-    const res = await strapiFetch<any>(path, { revalidate: FAST_REVALIDATE }); 
-    const items = unwrapCollection(res);
-    
-    return items.map((x: AnyObj) => {
+const PRODUCT_POPULATE = "&populate[0]=image&populate[1]=category_product&populate[2]=variants.VariantImage";
+
+function mapCatalogProduct(x: AnyObj): any {
       const cat = unwrapRelation(x?.category_product);
       const imgField = x?.image;
       const imageUrls = (Array.isArray(imgField) ? imgField : [imgField]).map((m: any) => getMediaUrl(m)).filter((u: string | null): u is string => typeof u === "string");
@@ -221,32 +212,85 @@ export async function getCatalogProducts(): Promise<any[]> {
               VariantImage: {
                 url: getMediaUrl(variantImg) || "",
                 thumbUrl: getMediaThumbUrl(variantImg) || "",
+                displayUrl: absMediaUrl((variantImg?.attributes || variantImg)?.formats?.medium?.url) || getMediaUrl(variantImg) || "",
               },
             };
           }).filter((v: any) => v.ColorName !== "")
         : [];
 
       return {
+        slug: x.slug || "",
+        documentId: x.documentId,
+        categoryTitle: cat?.title || "",
+        createdAtISO: x.createdAt,
+        updatedAt: x.updatedAt,
         id: String(x?.id ?? x?.documentId ?? ""),
         title: x?.title || x?.Title || "",
         category: String(cat?.slug ?? ""),
         featured: !!x?.featured,
         imageUrls,
+        galleryImages: (Array.isArray(imgField) ? imgField : [imgField]).filter(Boolean).map((m: any) => ({
+          original: getMediaUrl(m),
+          display: absMediaUrl((m.attributes || m)?.formats?.medium?.url) || getMediaUrl(m),
+          thumb: absMediaUrl((m.attributes || m)?.formats?.thumbnail?.url) || getMediaThumbUrl(m),
+        })),
         imageUrl: imageUrls[0] || "",
         imageThumbUrl: imageThumbUrls[0] || imageUrls[0] || "",
         image: imageUrls[0] || "",
-        wholesalePrice: x?.wholesalePrice ?? x?.WholesalePrice ?? x?.wholesale_price,
+        wholesalePrice: x.wholesalePrice == null ? undefined : Number(x.wholesalePrice),
         minQty: x?.minQty ?? x?.MinQty ?? x?.min_qty ?? 1,
         bullets: normalizeStringArray(x?.bullets ?? x?.Bullets),
         specs: normalizeStringArray(x?.specs ?? x?.Specs),
         variants: mappedVariants,
-        description: x?.description || x?.Description || ""
+        description: normalizeStringArray(x?.description || x?.Description)
       };
-    });
-  } catch (error) {
-    console.error("getCatalogProducts runtime hatası:", error);
-    return [];
+}
+
+async function queryProducts(query: string, populate = true) {
+  const res = await strapiFetch<any>(`/api/products?status=published&filters[isActive][$eq]=true&${query}${populate ? PRODUCT_POPULATE : ''}`, { revalidate: FAST_REVALIDATE, next: { tags: ['products'] } });
+  return { items: unwrapCollection(res), pagination: res.meta?.pagination };
+}
+
+export async function getCatalogProducts(): Promise<any[]> {
+  const result: any[] = [];
+  for (let page = 1; ; page++) {
+    const { items, pagination } = await queryProducts(`sort=order:asc&pagination[pageSize]=100&pagination[page]=${page}`);
+    result.push(...items.map(mapCatalogProduct));
+    if (!items.length || page >= (pagination?.pageCount || 1)) break;
   }
+  return result;
+}
+
+export async function getProductBySlug(slug: string) {
+  const { items } = await queryProducts(`filters[slug][$eq]=${encodeURIComponent(slug)}&pagination[pageSize]=1`);
+  if (items[0]) return mapCatalogProduct(items[0]);
+  const aliases = await strapiFetch<any>(`/api/product-slugs?filters[slug][$eq]=${encodeURIComponent(slug)}&pagination[pageSize]=1`, { revalidate: FAST_REVALIDATE, next: { tags: ['products'] } });
+  const alias = unwrapCollection(aliases)[0];
+  if (!alias) return null;
+  const target = await queryProducts(`filters[documentId][$eq]=${encodeURIComponent(alias.targetDocumentId)}&pagination[pageSize]=1`);
+  return target.items[0] ? mapCatalogProduct(target.items[0]) : null;
+}
+
+export async function getProductByLegacyId(id: string) {
+  if (!/^\d+$/.test(id)) return null;
+  const { items } = await queryProducts(`filters[id][$eq]=${id}&pagination[pageSize]=1`);
+  return items[0] ? mapCatalogProduct(items[0]) : null;
+}
+
+export async function getRelatedProducts(product: any) {
+  if (!product.category) return [];
+  const { items } = await queryProducts(`filters[category_product][slug][$eq]=${encodeURIComponent(product.category)}&filters[documentId][$ne]=${encodeURIComponent(product.documentId)}&sort=order:asc&pagination[pageSize]=4`);
+  return [...new Map<string, any>(items.map(mapCatalogProduct).filter((p: any) => p.slug && p.id !== product.id).map((p: any) => [p.documentId || p.id, p] as [string, any])).values()];
+}
+
+export async function getProductSitemapEntries() {
+  const result: any[] = [];
+  for (let page = 1; ; page++) {
+    const { items, pagination } = await queryProducts(`fields[0]=slug&fields[1]=updatedAt&pagination[pageSize]=100&pagination[page]=${page}`, false);
+    result.push(...items.filter((p: any) => p.slug));
+    if (!items.length || page >= (pagination?.pageCount || 1)) break;
+  }
+  return result;
 }
 
 export async function getCustomProductTypes(): Promise<any[]> {

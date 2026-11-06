@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 export async function POST(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
 
-  if (secret !== process.env.REVALIDATE_SECRET) {
+  if (!process.env.REVALIDATE_SECRET || secret !== process.env.REVALIDATE_SECRET) {
     return NextResponse.json(
       {
         ok: false,
@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
     revalidateTag("banners", { expire: 0 });
 
     // Ana sayfa route cache'ini temizler
+    revalidateTag("products", { expire: 0 });
+    revalidatePath("/products");
+    revalidatePath("/urunler/[slug]", "page");
+    revalidatePath("/sitemap.xml");
     revalidatePath("/");
 
     return NextResponse.json({
