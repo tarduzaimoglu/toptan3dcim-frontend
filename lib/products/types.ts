@@ -23,6 +23,7 @@ export type ProductVariant = {
 };
 
 export type Product = {
+  documentId?: string;
   slug?: string;
   categoryTitle?: string;
   description?: string[];

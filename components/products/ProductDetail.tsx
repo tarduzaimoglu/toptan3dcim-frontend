@@ -55,7 +55,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           {active && <span className="absolute bottom-4 right-4 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow-sm">Büyüt ↗</span>}
         </button>
         {images.length > 1 && <div className="mt-3 flex gap-3 overflow-x-auto pb-2">{images.map((src, i) => <button key={src} aria-label={`${i + 1}. görsel`} aria-pressed={active === src} onClick={() => { setActive(src); const i = product.variants?.findIndex(v => v.VariantImage?.url === src) ?? -1; if (i >= 0) { setVariantIndex(i); setAdded(false); } }} className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border ${active === src ? 'border-[#7C3AED] ring-1 ring-[#7C3AED]' : 'border-slate-200'}`}>
-          <ProductImage src={src} alt={`${product.title}, görsel ${i + 1}`} sizes="80px" />
+          <ProductImage src={sources.get(src)?.thumb || src} alt={`${product.title}, görsel ${i + 1}`} sizes="80px" />
         </button>)}</div>}
       </section>
       <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-8">

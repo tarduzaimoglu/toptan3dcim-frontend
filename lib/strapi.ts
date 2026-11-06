@@ -1,4 +1,5 @@
 type AnyObj = Record<string, any>;
+import { STANDARD_COLORS, getClosestStandardColor } from '@/lib/products/colors';
 
 export const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL?.replace(/\/$/, "") || "http://localhost:1337";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN || "";
@@ -281,6 +282,46 @@ export async function getRelatedProducts(product: any) {
   if (!product.category) return [];
   const { items } = await queryProducts(`filters[category_product][slug][$eq]=${encodeURIComponent(product.category)}&filters[documentId][$ne]=${encodeURIComponent(product.documentId)}&sort=order:asc&pagination[pageSize]=4`);
   return [...new Map<string, any>(items.map(mapCatalogProduct).filter((p: any) => p.slug && p.id !== product.id).map((p: any) => [p.documentId || p.id, p] as [string, any])).values()];
+}
+
+export async function getCatalogColorOptions() {
+  const groups: Record<string, string[]> = {};
+  for (let page = 1; ; page++) {
+    const res = await strapiFetch<any>(`/api/products?status=published&filters[isActive][$eq]=true&fields[0]=id&populate[variants][fields][0]=ColorCode&pagination[pageSize]=100&pagination[page]=${page}`, { revalidate: FAST_REVALIDATE, next: { tags: ['products'] } });
+    const items = unwrapCollection(res);
+    for (const p of items) for (const v of p.variants || []) {
+      if (!v.ColorCode) continue;
+      const id = getClosestStandardColor(v.ColorCode).id;
+      groups[id] = [...new Set([...(groups[id] || []), v.ColorCode])];
+    }
+    if (!items.length || page >= (res.meta?.pagination?.pageCount || 1)) break;
+  }
+  return { colors: STANDARD_COLORS.filter(c => groups[c.id]?.length), groups };
+}
+
+export async function getRelatedProductPage(product: any, search: URLSearchParams, page = 1) {
+  const query = new URLSearchParams();
+  const categories = (search.has('cats') ? search.get('cats') || '' : product.category).split(',').filter(Boolean).slice(0, 20);
+  categories.forEach((cat: string, i: number) => query.set(`filters[category_product][slug][$in][${i}]`, cat));
+  const selectedColors = (search.get('colors') || '').split(',').filter(Boolean);
+  if (selectedColors.length) {
+    const { groups } = await getCatalogColorOptions();
+    const codes = [...new Set(selectedColors.flatMap(c => groups[c] || []))];
+    if (!codes.length) return { products: [], hasMore: false, page };
+    // Match the catalog's nearest-standard-color behavior, including products without variants.
+    query.set('filters[$or][0][variants][id][$null]', 'true');
+    codes.forEach((code, i) => query.set(`filters[$or][1][variants][ColorCode][$in][${i}]`, code));
+  }
+  const sorts: Record<string, string> = { newest: 'createdAt:desc', price_asc: 'wholesalePrice:asc', price_desc: 'wholesalePrice:desc', minqty_asc: 'minQty:asc', minqty_desc: 'minQty:desc' };
+  query.set('sort[0]', sorts[search.get('sort') || 'newest'] || 'createdAt:desc');
+  query.set('sort[1]', 'id:asc');
+  query.set('filters[documentId][$ne]', product.documentId);
+  if (search.get('q')?.trim()) query.set('filters[title][$containsi]', search.get('q')!.trim().slice(0, 200));
+  query.set('pagination[pageSize]', '12');
+  query.set('pagination[page]', String(page));
+  const { items, pagination } = await queryProducts(query.toString());
+  const products = [...new Map<string, any>(items.map(mapCatalogProduct).filter((p: any) => p.slug && p.documentId !== product.documentId).map((p: any) => [p.documentId || p.id, p] as [string, any])).values()];
+  return { products, hasMore: page < (pagination?.pageCount || 1), page };
 }
 
 export async function getProductSitemapEntries() {
